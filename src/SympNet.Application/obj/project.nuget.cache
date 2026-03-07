@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "9SCC9bShm3w=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Application\\SympNet.Application.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\lenovo\\.nuget\\packages\\automapper\\12.0.1\\automapper.12.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}
