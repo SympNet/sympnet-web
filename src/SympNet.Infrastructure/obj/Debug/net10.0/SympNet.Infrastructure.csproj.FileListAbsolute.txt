@@ -16,3 +16,5 @@ C:\Users\lenovo\Desktop\sympnet-web\src\SympNet.Infrastructure\obj\Debug\net10.0
 C:\Users\lenovo\Desktop\sympnet-web\src\SympNet.Infrastructure\obj\Debug\net10.0\SympNet.Infrastructure.pdb
 C:\Users\lenovo\Desktop\sympnet-web\src\SympNet.Infrastructure\obj\Debug\net10.0\SympNet.Infrastructure.genruntimeconfig.cache
 C:\Users\lenovo\Desktop\sympnet-web\src\SympNet.Infrastructure\obj\Debug\net10.0\ref\SympNet.Infrastructure.dll
+C:\Users\lenovo\Desktop\sympnet-web\src\SympNet.Infrastructure\bin\Debug\net10.0\SympNet.Application.dll
+C:\Users\lenovo\Desktop\sympnet-web\src\SympNet.Infrastructure\bin\Debug\net10.0\SympNet.Application.pdb
