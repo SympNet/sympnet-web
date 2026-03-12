@@ -58,10 +58,48 @@ public class AuthController : ControllerBase
     [HttpGet("reset-admin")]
     public async Task<IActionResult> ResetAdmin()
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == "admin@sympnet.com");
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == "sirine.rezgui@ensi-uma.tn");
         if (user == null) return NotFound(new { message = "Admin not found" });
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@2026!");
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword("sirine123.");
         await _db.SaveChangesAsync();
         return Ok(new { message = "Admin password reset successfully!" });
+    }
+
+    /// <summary>
+    /// Request a password reset token (sent via email)
+    /// </summary>
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        await _authService.ForgotPasswordAsync(dto);
+        return Ok(new { message = "If this email exists, a reset token has been sent." });
+    }
+
+    /// <summary>
+    /// Reset password using the token received by email
+    /// </summary>
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        try
+        {
+            await _authService.ResetPasswordAsync(dto);
+            return Ok(new { message = "Password reset successfully." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    [HttpGet("fix-admin")]
+    public async Task<IActionResult> FixAdmin()
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == "sirine.rezgui@ensi-uma.tn");
+        if (user == null) return NotFound(new { message = "Admin not found" });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@2026!");
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Admin password fixed!" });
     }
 }

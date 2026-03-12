@@ -9,6 +9,10 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;
 
+    // Reset password
+    public string? PasswordResetToken { get; set; }
+    public DateTime? PasswordResetTokenExpiry { get; set; }
+
     public Patient? Patient { get; set; }
     public Doctor? Doctor { get; set; }
 }

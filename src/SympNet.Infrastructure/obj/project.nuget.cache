@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "XsZc/+TSn5Y=",
+  "dgSpecHash": "/NiVGFdwaEU=",
   "success": true,
-  "projectFilePath": "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Infrastructure\\SympNet.Infrastructure.csproj",
+  "projectFilePath": "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.Infrastructure\\SympNet.Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\lenovo\\.nuget\\packages\\automapper\\12.0.1\\automapper.12.0.1.nupkg.sha512",
     "C:\\Users\\lenovo\\.nuget\\packages\\azure.core\\1.47.1\\azure.core.1.47.1.nupkg.sha512",

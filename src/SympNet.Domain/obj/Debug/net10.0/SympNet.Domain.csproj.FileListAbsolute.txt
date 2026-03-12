@@ -10,3 +10,15 @@ C:\Users\lenovo\Desktop\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\SympNet
 C:\Users\lenovo\Desktop\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\refint\SympNet.Domain.dll
 C:\Users\lenovo\Desktop\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\SympNet.Domain.pdb
 C:\Users\lenovo\Desktop\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\ref\SympNet.Domain.dll
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\bin\Debug\net10.0\SympNet.Domain.deps.json
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\bin\Debug\net10.0\SympNet.Domain.dll
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\bin\Debug\net10.0\SympNet.Domain.pdb
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\SympNet.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\SympNet.Domain.AssemblyInfoInputs.cache
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\SympNet.Domain.AssemblyInfo.cs
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\SympNet.Domain.csproj.CoreCompileInputs.cache
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\SympNet.Domain.sourcelink.json
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\SympNet.Domain.dll
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\refint\SympNet.Domain.dll
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\SympNet.Domain.pdb
+C:\Users\lenovo\Desktop\DCI_S2\sympnet-web\src\SympNet.Domain\obj\Debug\net10.0\ref\SympNet.Domain.dll
