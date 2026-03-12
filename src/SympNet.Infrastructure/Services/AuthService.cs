@@ -138,4 +138,37 @@ public class AuthService
             .Select(s => s[random.Next(s.Length)])
             .ToArray());
     }
+
+    //  Request password reset → sends token via email
+    public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        if (user == null) return;
+
+        // Generate a URL-safe token
+        var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
+            .Replace("+", "-").Replace("/", "_").Replace("=", "");
+
+        user.PasswordResetToken = token; // store plain (not hashed)
+        user.PasswordResetTokenExpiry = DateTime.UtcNow.AddMinutes(15);
+        await _db.SaveChangesAsync();
+
+        await _email.SendPasswordResetEmailAsync(user.Email, token);
+    }
+
+    //  Verify token and set new password
+    public async Task ResetPasswordAsync(ResetPasswordDto dto)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u =>
+            u.PasswordResetToken == dto.Token &&
+            u.PasswordResetTokenExpiry > DateTime.UtcNow);
+
+        if (user == null)
+            throw new Exception("Invalid or expired reset token.");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiry = null;
+        await _db.SaveChangesAsync();
+    }
 }

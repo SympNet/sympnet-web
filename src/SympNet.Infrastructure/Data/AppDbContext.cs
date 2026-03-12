@@ -34,7 +34,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>().HasData(new User
         {
             Id = 1,
-            Email = "admin@sympnet.com",
+            Email = "sirine.rezgui@ensi-uma.tn",
             PasswordHash = "$2a$11$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
             Role = "Admin",
             IsActive = true,

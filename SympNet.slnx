@@ -4,5 +4,6 @@
     <Project Path="src/SympNet.Application/SympNet.Application.csproj" />
     <Project Path="src/SympNet.Domain/SympNet.Domain.csproj" />
     <Project Path="src/SympNet.Infrastructure/SympNet.Infrastructure.csproj" />
+    <Project Path="src/SympNet.Web/SympNet.Web.csproj" />
   </Folder>
 </Solution>
