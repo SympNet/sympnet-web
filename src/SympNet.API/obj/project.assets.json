@@ -3935,11 +3935,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.API\\SympNet.API.csproj",
+      "projectUniqueName": "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.API\\SympNet.API.csproj",
       "projectName": "SympNet.API",
-      "projectPath": "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.API\\SympNet.API.csproj",
+      "projectPath": "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.API\\SympNet.API.csproj",
       "packagesPath": "C:\\Users\\lenovo\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.API\\obj\\",
+      "outputPath": "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.API\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -3961,11 +3961,11 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.Application\\SympNet.Application.csproj": {
-              "projectPath": "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.Application\\SympNet.Application.csproj"
+            "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Application\\SympNet.Application.csproj": {
+              "projectPath": "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Application\\SympNet.Application.csproj"
             },
-            "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.Infrastructure\\SympNet.Infrastructure.csproj": {
-              "projectPath": "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.Infrastructure\\SympNet.Infrastructure.csproj"
+            "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Infrastructure\\SympNet.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Infrastructure\\SympNet.Infrastructure.csproj"
             }
           }
         }
@@ -4455,6 +4455,16 @@
       "warningLevel": 1,
       "message": "SympNet.API depends on Scalar.AspNetCore (>= 2.3.5) but Scalar.AspNetCore 2.3.5 was not found. Scalar.AspNetCore 2.4.1 was resolved instead.",
       "libraryId": "Scalar.AspNetCore",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    },
+    {
+      "code": "NU1903",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'AutoMapper' 16.1.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-rvv3-g6hj-g44x",
+      "libraryId": "AutoMapper",
       "targetGraphs": [
         "net10.0"
       ]

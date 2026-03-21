@@ -274,7 +274,7 @@ a{text-decoration:none;color:inherit}
             var token = result.RootElement.GetProperty("token").GetString();
             var userEmail = result.RootElement.GetProperty("email").GetString();
 
-            Nav.NavigateTo($"/dashboard?token={token}&role={returnedRole}&email={userEmail}");
+            Nav.NavigateTo($"/dashboard?token={Uri.EscapeDataString(token ?? "")}&role={returnedRole}&email={Uri.EscapeDataString(email ?? "")}");
         }
         catch (Exception ex)
         {

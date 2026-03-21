@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.Web\\SympNet.Web.csproj": {}
+    "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Web\\SympNet.Web.csproj": {}
   },
   "projects": {
-    "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.Web\\SympNet.Web.csproj": {
+    "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Web\\SympNet.Web.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.Web\\SympNet.Web.csproj",
+        "projectUniqueName": "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Web\\SympNet.Web.csproj",
         "projectName": "SympNet.Web",
-        "projectPath": "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.Web\\SympNet.Web.csproj",
+        "projectPath": "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Web\\SympNet.Web.csproj",
         "packagesPath": "C:\\Users\\lenovo\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.Web\\obj\\",
+        "outputPath": "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Web\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -59,7 +59,7 @@
             },
             "MudBlazor": {
               "target": "Package",
-              "version": "[9.1.0, )"
+              "version": "[9.2.0, )"
             }
           },
           "imports": [

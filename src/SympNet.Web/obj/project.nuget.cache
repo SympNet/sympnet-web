@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "kNyuDTE1bJc=",
+  "dgSpecHash": "KSEpuARMwrw=",
   "success": true,
-  "projectFilePath": "C:\\Users\\lenovo\\Desktop\\DCI_S2\\sympnet-web\\src\\SympNet.Web\\SympNet.Web.csproj",
+  "projectFilePath": "C:\\Users\\lenovo\\Desktop\\sympnet-web\\src\\SympNet.Web\\SympNet.Web.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\lenovo\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.2\\microsoft.aspnetcore.app.internal.assets.10.0.2.nupkg.sha512",
-    "C:\\Users\\lenovo\\.nuget\\packages\\mudblazor\\9.1.0\\mudblazor.9.1.0.nupkg.sha512"
+    "C:\\Users\\lenovo\\.nuget\\packages\\mudblazor\\9.2.0\\mudblazor.9.2.0.nupkg.sha512"
   ],
   "logs": []
 }

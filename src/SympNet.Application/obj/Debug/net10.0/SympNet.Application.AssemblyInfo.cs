@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SympNet.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4b2b5290651e45689796e9d15acefc2e3768e089")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b45b43e4714a46a5485b5e924736f20158efdc84")]
 [assembly: System.Reflection.AssemblyProductAttribute("SympNet.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SympNet.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

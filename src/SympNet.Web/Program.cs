@@ -1,4 +1,5 @@
 using SympNet.Web.Components;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
