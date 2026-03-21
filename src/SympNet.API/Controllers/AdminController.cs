@@ -125,6 +125,7 @@ public class AdminController : ControllerBase
         if (doctor == null)
             return NotFound(new { message = "Doctor not found." });
 
+        doctor.IsValidated = false;  // ✅ Fix
         doctor.User.IsActive = false;
         await _db.SaveChangesAsync();
 

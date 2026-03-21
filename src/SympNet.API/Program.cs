@@ -4,11 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using NSwag;
 using NSwag.AspNetCore;
+using NSwag.Generation.Processors.Security;
 using SympNet.Infrastructure.Data;
 using SympNet.Infrastructure.Services;
-using NSwag.Generation.Processors.Security;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.AddConsole();
 
 // Database
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -20,7 +22,7 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<AuthService>();
 
-// JWT Authentication
+// JWT
 var jwtKey = builder.Configuration["Jwt:Key"]!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -33,36 +35,46 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
-// NSwag (Swagger UI)
+// ✅ CORS — permet Blazor sur tous les ports
+builder.Services.AddCors(opt => opt.AddPolicy("BlazorPolicy", p =>
+    p.WithOrigins(
+        "http://localhost:5000",
+        "http://localhost:5049",
+        "http://localhost:5115",
+        "https://localhost:7049",
+        "https://localhost:7115"
+    )
+    .AllowAnyHeader()
+    .AllowAnyMethod()));
+
+// NSwag Swagger
 builder.Services.AddOpenApiDocument(config =>
 {
     config.Title = "SympNet API";
     config.Version = "v1";
-    config.Description = "SympNet Medical Platform API";
-    
     config.AddSecurity("JWT", new OpenApiSecurityScheme
     {
-        Type = OpenApiSecuritySchemeType.Http,               Scheme = "bearer",                       
-        BearerFormat = "JWT",                    
+        Type = OpenApiSecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
         In = OpenApiSecurityApiKeyLocation.Header,
-        Description = "Enter your JWT token (without 'Bearer ' prefix)"
+        Description = "Enter your JWT token"
     });
-
-    // ← Add this block to apply security to all endpoints
     config.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("JWT"));
 });
 
 var app = builder.Build();
 
-// Swagger UI at /swagger
+// ✅ CORS doit être AVANT Authentication
+app.UseCors("BlazorPolicy");
+
 app.UseOpenApi();
 app.UseSwaggerUi(settings =>
 {
@@ -74,11 +86,18 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Auto-migrate database at startup
-using (var scope = app.Services.CreateScope())
+// Auto-migrate
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+    Console.WriteLine(" Database ready.");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($" Migration failed: {ex.Message}");
+    throw;
 }
 
 app.Run();

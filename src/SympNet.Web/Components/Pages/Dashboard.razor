@@ -467,7 +467,6 @@ td{padding:13px 16px;font-size:13.5px;color:var(--inm);vertical-align:middle}
     private NewDoctorForm newDoc = new();
     private string? addDocError = null;
     private bool addingDoc = false;
-
     private bool showToast = false;
     private string toastMessage = "";
     private string toastType = "ok";
@@ -475,11 +474,22 @@ td{padding:13px 16px;font-size:13.5px;color:var(--inm);vertical-align:middle}
     protected override async Task OnInitializedAsync()
     {
         userEmail = Email ?? "";
+
+        //  Fix 2 — Rediriger doctor vers sa propre page
+        if ((Role ?? "").ToLower() == "doctor")
+        {
+            Nav.NavigateTo($"/doctor/dashboard?token={Token}&email={Email}");
+            return;
+        }
+
+        // ✅ Fix 3 — Token Bearer sur toutes les requêtes
         if (!string.IsNullOrEmpty(Token))
         {
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
         }
+        Console.WriteLine($"Token reçu: {Token?.Substring(0, Math.Min(20, Token?.Length ?? 0))}...");
+Console.WriteLine($"Role reçu: {Role}");
         await LoadData();
     }
 
@@ -494,28 +504,59 @@ td{padding:13px 16px;font-size:13.5px;color:var(--inm);vertical-align:middle}
             if (s != null) stats = s;
         }
         catch { }
+        StateHasChanged();
     }
 
     private IEnumerable<DoctorDto> FilteredDoctors => doctors;
-
     private void SetSection(string section) => activeSection = section;
 
-    private async Task ToggleDoctor(int id, bool activate)
+private async Task ToggleDoctor(int id, bool activate)
+{
+    try
     {
-        try
+        if (!string.IsNullOrEmpty(Token))
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+
+        var endpoint = activate
+            ? $"api/admin/doctors/{id}/activate"
+            : $"api/admin/doctors/{id}/deactivate";
+
+        var response = await Http.PutAsync(endpoint, null);
+
+        if (response.IsSuccessStatusCode)
         {
-            var endpoint = activate ? $"api/admin/doctors/{id}/activate" : $"api/admin/doctors/{id}/deactivate";
-            await Http.PutAsync(endpoint, null);
+            //  Mettre à jour localement IMMÉDIATEMENT sans attendre l'API
+            var doc = doctors.FirstOrDefault(d => d.Id == id);
+            if (doc != null)
+            {
+                doc.IsValidated = activate;
+                StateHasChanged();
+            }
+            // Puis recharger depuis l'API
             await LoadData();
             ShowToast(activate ? "✅ Médecin activé avec succès." : "🔒 Médecin désactivé.", "ok");
         }
-        catch { ShowToast("❌ Erreur lors de l'opération.", "er"); }
+        else
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            ShowToast(" Erreur : " + response.StatusCode + " - " + content, "er");
+        }
     }
+    catch (Exception ex)
+    {
+        ShowToast("❌ " + ex.Message, "er");
+    }
+}
 
     private async Task DeleteDoctor(int id)
     {
         try
         {
+            if (!string.IsNullOrEmpty(Token))
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+
             await Http.DeleteAsync($"api/admin/doctors/{id}");
             await LoadData();
             ShowToast("🗑️ Médecin supprimé.", "ok");
@@ -536,6 +577,10 @@ td{padding:13px 16px;font-size:13.5px;color:var(--inm);vertical-align:middle}
         addingDoc = true;
         try
         {
+            if (!string.IsNullOrEmpty(Token))
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+
             var response = await Http.PostAsJsonAsync("api/admin/doctors", newDoc);
             if (response.IsSuccessStatusCode)
             {
@@ -548,7 +593,8 @@ td{padding:13px 16px;font-size:13.5px;color:var(--inm);vertical-align:middle}
             {
                 var content = await response.Content.ReadAsStringAsync();
                 var json = JsonDocument.Parse(content);
-                addDocError = json.RootElement.TryGetProperty("message", out var msg) ? msg.GetString() : "Erreur lors de la création.";
+                addDocError = json.RootElement.TryGetProperty("message", out var msg)
+                    ? msg.GetString() : "Erreur lors de la création.";
             }
         }
         catch { addDocError = "Erreur de connexion à l'API."; }
