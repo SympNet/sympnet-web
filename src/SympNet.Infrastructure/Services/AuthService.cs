@@ -4,6 +4,7 @@ using SympNet.Application.DTOs.Doctor;
 using SympNet.Application.DTOs.Patient;
 using SympNet.Domain.Entities;
 using SympNet.Infrastructure.Data;
+using System.Security.Cryptography;
 
 namespace SympNet.Infrastructure.Services;
 
@@ -20,11 +21,13 @@ public class AuthService
         _email = email;
     }
 
+    // ─────────────────────────────────────────────────────────────
     //  PATIENT registers himself (from mobile)
+    // ─────────────────────────────────────────────────────────────
     public async Task<AuthResponseDto> RegisterPatientAsync(RegisterPatientDto dto)
     {
         if (await _db.Users.AnyAsync(u => u.Email == dto.Email))
-            throw new Exception("Email already exists.");
+            throw new AppException("Email already exists.");
 
         var user = new User
         {
@@ -58,13 +61,15 @@ public class AuthService
         };
     }
 
-    //  ADMIN creates doctor → sends email with credentials
+    // ─────────────────────────────────────────────────────────────
+    //  ADMIN creates a doctor → sends email with credentials
+    // ─────────────────────────────────────────────────────────────
     public async Task<AuthResponseDto> CreateDoctorByAdminAsync(CreateDoctorDto dto)
     {
         if (await _db.Users.AnyAsync(u => u.Email == dto.Email))
-            throw new Exception("Email already exists.");
+            throw new AppException("Email already exists.");
 
-        // Generate random temporary password
+        // FIX: use cryptographically secure random password
         var tempPassword = GenerateTemporaryPassword();
 
         var user = new User
@@ -72,7 +77,7 @@ public class AuthService
             Email = dto.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(tempPassword),
             Role = "Doctor",
-            IsActive = true // Active immediately since admin created it
+            IsActive = true
         };
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
@@ -87,16 +92,13 @@ public class AuthService
             Address = dto.Address,
             Latitude = dto.Latitude,
             Longitude = dto.Longitude,
-            IsValidated = true // Admin already validated
+            IsValidated = true
         };
         _db.Doctors.Add(doctor);
         await _db.SaveChangesAsync();
 
-        // Send email with credentials
-        await _email.SendDoctorCredentialsAsync(
-            dto.Email,
-            dto.FirstName,
-            tempPassword);
+        // Send credentials email
+        await _email.SendDoctorCredentialsAsync(dto.Email, dto.FirstName, tempPassword);
 
         return new AuthResponseDto
         {
@@ -107,17 +109,22 @@ public class AuthService
         };
     }
 
-    //  LOGIN for all roles (Admin, Doctor, Patient)
+    // ─────────────────────────────────────────────────────────────
+    //  LOGIN for all roles
+    // ─────────────────────────────────────────────────────────────
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
-        var user = await _db.Users
-            .FirstOrDefaultAsync(u => u.Email == dto.Email);
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-            throw new Exception("Invalid email or password.");
+        // FIX: always run BCrypt even on null user to prevent timing attacks
+        var passwordHash = user?.PasswordHash ?? BCrypt.Net.BCrypt.HashPassword("dummy");
+        var valid = BCrypt.Net.BCrypt.Verify(dto.Password, passwordHash);
+
+        if (user == null || !valid)
+            throw new AppException("Invalid email or password.");
 
         if (!user.IsActive)
-            throw new Exception("Account is not active.");
+            throw new AppException("Account is not active.");
 
         return new AuthResponseDto
         {
@@ -129,46 +136,64 @@ public class AuthService
         };
     }
 
-    //  Generate random password for doctor
-    private static string GenerateTemporaryPassword()
-    {
-        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@#!";
-        var random = new Random();
-        return new string(Enumerable.Repeat(chars, 10)
-            .Select(s => s[random.Next(s.Length)])
-            .ToArray());
-    }
-
-    //  Request password reset → sends token via email
+    // ─────────────────────────────────────────────────────────────
+    //  FORGOT PASSWORD → sends reset token via email
+    // ─────────────────────────────────────────────────────────────
     public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-        if (user == null) return;
 
-        // Generate a URL-safe token
-        var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
+        // FIX: always add a delay to prevent user enumeration via timing
+        await Task.Delay(Random.Shared.Next(200, 500));
+
+        if (user == null) return; // silent — don't reveal if email exists
+
+        // Generate a URL-safe random token
+        var rawToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
             .Replace("+", "-").Replace("/", "_").Replace("=", "");
 
-        user.PasswordResetToken = token; // store plain (not hashed)
+        // FIX: store HASHED token in DB (never plain text)
+        user.PasswordResetToken = BCrypt.Net.BCrypt.HashPassword(rawToken);
         user.PasswordResetTokenExpiry = DateTime.UtcNow.AddMinutes(15);
         await _db.SaveChangesAsync();
 
-        await _email.SendPasswordResetEmailAsync(user.Email, token);
+        // Send the RAW token to user (only they have it)
+        await _email.SendPasswordResetEmailAsync(user.Email, rawToken);
     }
 
-    //  Verify token and set new password
+    // ─────────────────────────────────────────────────────────────
+    //  RESET PASSWORD → verify token and set new password
+    // ─────────────────────────────────────────────────────────────
     public async Task ResetPasswordAsync(ResetPasswordDto dto)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u =>
-            u.PasswordResetToken == dto.Token &&
-            u.PasswordResetTokenExpiry > DateTime.UtcNow);
+        // Load all non-expired candidates, then verify token via BCrypt
+        var candidates = await _db.Users
+            .Where(u => u.PasswordResetTokenExpiry > DateTime.UtcNow
+                     && u.PasswordResetToken != null)
+            .ToListAsync();
+
+        // FIX: BCrypt.Verify handles the hash comparison securely
+        var user = candidates.FirstOrDefault(u =>
+            BCrypt.Net.BCrypt.Verify(dto.Token, u.PasswordResetToken!));
 
         if (user == null)
-            throw new Exception("Invalid or expired reset token.");
+            throw new AppException("Invalid or expired reset token.");
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpiry = null;
         await _db.SaveChangesAsync();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  HELPERS
+    // ─────────────────────────────────────────────────────────────
+
+    // FIX: cryptographically secure random (replaces new Random())
+    private static string GenerateTemporaryPassword()
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@#!";
+        var bytes = RandomNumberGenerator.GetBytes(12);
+        return new string(bytes.Select(b => chars[b % chars.Length]).ToArray());
     }
 }

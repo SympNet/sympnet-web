@@ -1,8 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using SympNet.Application.DTOs.Auth;
+using SympNet.Application.DTOs.Doctor;
 using SympNet.Application.DTOs.Patient;
-using SympNet.Infrastructure.Data;
 using SympNet.Infrastructure.Services;
 
 namespace SympNet.API.Controllers;
@@ -12,12 +12,11 @@ namespace SympNet.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
-    private readonly AppDbContext _db;
 
-    public AuthController(AuthService authService, AppDbContext db)
+    // FIX: removed AppDbContext — controllers must NOT talk to DB directly
+    public AuthController(AuthService authService)
     {
         _authService = authService;
-        _db = db;
     }
 
     /// <summary>
@@ -31,7 +30,25 @@ public class AuthController : ControllerBase
             var result = await _authService.RegisterPatientAsync(dto);
             return CreatedAtAction(nameof(RegisterPatient), result);
         }
-        catch (Exception ex)
+        catch (AppException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Admin creates a doctor account (Admin role required)
+    /// </summary>
+    [HttpPost("register/doctor")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateDoctor([FromBody] CreateDoctorDto dto)
+    {
+        try
+        {
+            var result = await _authService.CreateDoctorByAdminAsync(dto);
+            return CreatedAtAction(nameof(CreateDoctor), result);
+        }
+        catch (AppException ex)
         {
             return BadRequest(new { message = ex.Message });
         }
@@ -48,21 +65,10 @@ public class AuthController : ControllerBase
             var result = await _authService.LoginAsync(dto);
             return Ok(result);
         }
-        catch (Exception ex)
+        catch (AppException ex)
         {
             return Unauthorized(new { message = ex.Message });
         }
-    }
-
-    // TEMPORARY - delete after use!
-    [HttpGet("reset-admin")]
-    public async Task<IActionResult> ResetAdmin()
-    {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == "sirine.rezgui@ensi-uma.tn");
-        if (user == null) return NotFound(new { message = "Admin not found" });
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword("sirine123.");
-        await _db.SaveChangesAsync();
-        return Ok(new { message = "Admin password reset successfully!" });
     }
 
     /// <summary>
@@ -71,8 +77,9 @@ public class AuthController : ControllerBase
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
+        // Always return the same message regardless of whether email exists
         await _authService.ForgotPasswordAsync(dto);
-        return Ok(new { message = "If this email exists, a reset token has been sent." });
+        return Ok(new { message = "If this email exists, a reset link has been sent." });
     }
 
     /// <summary>
@@ -86,20 +93,9 @@ public class AuthController : ControllerBase
             await _authService.ResetPasswordAsync(dto);
             return Ok(new { message = "Password reset successfully." });
         }
-        catch (Exception ex)
+        catch (AppException ex)
         {
             return BadRequest(new { message = ex.Message });
         }
-    }
-    [HttpGet("fix-admin")]
-    public async Task<IActionResult> FixAdmin()
-    {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == "sirine.rezgui@ensi-uma.tn");
-        if (user == null) return NotFound(new { message = "Admin not found" });
-
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@2026!");
-        await _db.SaveChangesAsync();
-
-        return Ok(new { message = "Admin password fixed!" });
     }
 }
