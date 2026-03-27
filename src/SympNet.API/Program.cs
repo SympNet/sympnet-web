@@ -26,6 +26,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ConsultationService>();
 
 // ─────────────────────────────────────────────────────────────
 //  JWT AUTHENTICATION
@@ -94,6 +95,15 @@ if (builder.Environment.IsDevelopment())
 //  BUILD
 // ─────────────────────────────────────────────────────────────
 var app = builder.Build();
+// Après builder.Build(), ajoutez :
+var emailConfig = builder.Configuration.GetSection("Email");
+Console.WriteLine("=== EMAIL CONFIGURATION ===");
+Console.WriteLine($"From: {emailConfig["From"]}");
+Console.WriteLine($"SmtpHost: {emailConfig["SmtpHost"]}");
+Console.WriteLine($"SmtpPort: {emailConfig["SmtpPort"]}");
+Console.WriteLine($"Username: {emailConfig["Username"]}");
+Console.WriteLine($"Password length: {emailConfig["Password"]?.Length ?? 0}");
+Console.WriteLine("===========================");
 
 // ─────────────────────────────────────────────────────────────
 //  MIDDLEWARE PIPELINE

@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SympNet.Application.DTOs.Auth;
 using SympNet.Application.DTOs.Doctor;
 using SympNet.Application.DTOs.Patient;
+using SympNet.Infrastructure.Data;
+using SympNet.Infrastructure.Exceptions;
 using SympNet.Infrastructure.Services;
 
 namespace SympNet.API.Controllers;
@@ -12,16 +15,14 @@ namespace SympNet.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
+    private readonly AppDbContext _db;
 
-    // FIX: removed AppDbContext — controllers must NOT talk to DB directly
-    public AuthController(AuthService authService)
+    public AuthController(AuthService authService, AppDbContext db)
     {
         _authService = authService;
+        _db = db;
     }
 
-    /// <summary>
-    /// Patient registers himself (mobile only)
-    /// </summary>
     [HttpPost("register/patient")]
     public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto dto)
     {
@@ -36,27 +37,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Admin creates a doctor account (Admin role required)
-    /// </summary>
-    [HttpPost("register/doctor")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> CreateDoctor([FromBody] CreateDoctorDto dto)
-    {
-        try
-        {
-            var result = await _authService.CreateDoctorByAdminAsync(dto);
-            return CreatedAtAction(nameof(CreateDoctor), result);
-        }
-        catch (AppException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
-
-    /// <summary>
-    /// Login for all roles (Admin, Doctor, Patient)
-    /// </summary>
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
@@ -71,29 +51,60 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Request a password reset token (sent via email)
-    /// </summary>
+    [Authorize(Roles = "Admin")]
+    [HttpPost("create-doctor")]
+    public async Task<IActionResult> CreateDoctor([FromBody] CreateDoctorDto dto)
+    {
+        try
+        {
+            var result = await _authService.CreateDoctorByAdminAsync(dto);
+            return Ok(result);
+        }
+        catch (AppException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
-        // Always return the same message regardless of whether email exists
         await _authService.ForgotPasswordAsync(dto);
-        return Ok(new { message = "If this email exists, a reset link has been sent." });
+        return Ok(new { message = "Si l'email existe, un lien de réinitialisation a été envoyé." });
     }
 
-    /// <summary>
-    /// Reset password using the token received by email
-    /// </summary>
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
         try
         {
             await _authService.ResetPasswordAsync(dto);
-            return Ok(new { message = "Password reset successfully." });
+            return Ok(new { message = "Mot de passe réinitialisé avec succès." });
         }
         catch (AppException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("validate-reset-token")]
+    public async Task<IActionResult> ValidateResetToken([FromBody] ValidateTokenDto dto)
+    {
+        try
+        {
+            var candidates = await _db.Users
+                .Where(u => u.PasswordResetTokenExpiry > DateTime.UtcNow
+                         && u.PasswordResetToken != null)
+                .ToListAsync();
+
+            var valid = candidates.Any(u =>
+                BCrypt.Net.BCrypt.Verify(dto.Token, u.PasswordResetToken!));
+
+            if (!valid) return BadRequest(new { message = "Token invalide ou expiré." });
+
+            return Ok(new { message = "Token valide." });
+        }
+        catch (Exception ex)
         {
             return BadRequest(new { message = ex.Message });
         }

@@ -1,0 +1,300 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+@inject HttpClient Http
+
+<style>
+    .doctor-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        background: #FFFFFF;
+        border-right: 1px solid rgba(13, 148, 136, 0.1);
+        display: flex;
+        flex-direction: column;
+        z-index: 100;
+        transition: all 0.3s ease;
+    }
+
+    .doctor-sidebar-header {
+        padding: 28px 24px;
+        border-bottom: 1px solid rgba(13, 148, 136, 0.1);
+    }
+
+    .doctor-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .doctor-logo-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+    }
+
+    .doctor-logo-text h2 {
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+    }
+
+    .doctor-logo-text p {
+        font-size: 11px;
+        color: #6B7280;
+        margin-top: 2px;
+    }
+
+    .doctor-sidebar-nav {
+        flex: 1;
+        padding: 24px 16px;
+        overflow-y: auto;
+    }
+
+    .doctor-sidebar-nav::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .doctor-sidebar-nav::-webkit-scrollbar-track {
+        background: rgba(13, 148, 136, 0.05);
+        border-radius: 4px;
+    }
+
+    .doctor-sidebar-nav::-webkit-scrollbar-thumb {
+        background: rgba(13, 148, 136, 0.3);
+        border-radius: 4px;
+    }
+
+    .doctor-nav-section {
+        margin-bottom: 24px;
+    }
+
+    .doctor-nav-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #9CA3AF;
+        padding: 0 12px;
+        margin-bottom: 12px;
+    }
+
+    .doctor-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        margin: 4px 0;
+        border-radius: 12px;
+        color: #6B7280;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .doctor-nav-item i {
+        width: 20px;
+        font-size: 16px;
+    }
+
+    .doctor-nav-item:hover {
+        background: rgba(13, 148, 136, 0.05);
+        color: #0D9488;
+    }
+
+    .doctor-nav-item.active {
+        background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+    }
+
+    .doctor-nav-item.active i {
+        color: white;
+    }
+
+    .doctor-sidebar-footer {
+        padding: 20px 16px;
+        border-top: 1px solid rgba(13, 148, 136, 0.1);
+    }
+
+    .doctor-user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(13, 148, 136, 0.05);
+        margin-bottom: 12px;
+    }
+
+    .doctor-user-avatar {
+        width: 44px;
+        height: 44px;
+        background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 16px;
+        color: white;
+    }
+
+    .doctor-user-details h4 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 2px 0;
+        color: #1F2937;
+    }
+
+    .doctor-user-details p {
+        font-size: 11px;
+        color: #6B7280;
+        margin: 0;
+    }
+
+    .doctor-logout-btn {
+        width: 100%;
+        padding: 10px;
+        background: none;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 12px;
+        color: #EF4444;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .doctor-logout-btn:hover {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: #EF4444;
+    }
+
+    .doctor-main-content {
+        margin-left: 280px;
+        min-height: 100vh;
+        background: #F9FAFB;
+        padding: 20px;
+    }
+
+    @@media (max-width: 768px) {
+        .doctor-sidebar {
+            transform: translateX(-100%);
+        }
+        .doctor-main-content {
+            margin-left: 0;
+        }
+    }
+</style>
+
+<div class="doctor-sidebar">
+    <div class="doctor-sidebar-header">
+        <div class="doctor-logo">
+            <div class="doctor-logo-icon">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="doctor-logo-text">
+                <h2>SympNet</h2>
+                <p>Espace Médecin</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="doctor-sidebar-nav">
+        <div class="doctor-nav-section">
+            <div class="doctor-nav-label">Navigation</div>
+            <a href="/doctor/dashboard?token=@Token&email=@Email" class="doctor-nav-item @(IsActive("/doctor/dashboard") ? "active" : "")">
+                <i class="fas fa-chart-line"></i>
+                <span>Tableau de bord</span>
+            </a>
+            <a href="/doctor/patients?token=@Token&email=@Email" class="doctor-nav-item @(IsActive("/doctor/patients") ? "active" : "")">
+                <i class="fas fa-users"></i>
+                <span>Mes Patients</span>
+            </a>
+            <a href="/doctor/consultations?token=@Token&email=@Email" class="doctor-nav-item @(IsActive("/doctor/consultations") ? "active" : "")">
+                <i class="fas fa-microscope"></i>
+                <span>Consultations IA</span>
+            </a>
+        </div>
+
+        <div class="doctor-nav-section">
+            <div class="doctor-nav-label">Compte</div>
+            <a href="/doctor/profile?token=@Token&email=@Email" class="doctor-nav-item @(IsActive("/doctor/profile") ? "active" : "")">
+                <i class="fas fa-user-circle"></i>
+                <span>Mon Profil</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="doctor-sidebar-footer">
+        <div class="doctor-user-info">
+            <div class="doctor-user-avatar">
+                @(userEmail.Length > 0 ? userEmail[0].ToString().ToUpper() : "D")
+            </div>
+            <div class="doctor-user-details">
+                <h4>Dr. @userName</h4>
+                <p>Médecin</p>
+            </div>
+        </div>
+        <button class="doctor-logout-btn" @onclick="Logout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Déconnexion</span>
+        </button>
+    </div>
+</div>
+
+<div class="doctor-main-content">
+    @Body
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? Token { get; set; }
+    [SupplyParameterFromQuery] public string? Email { get; set; }
+
+    private string userEmail = "";
+    private string userName = "";
+
+    protected override void OnParametersSet()
+    {
+        // Récupérer les paramètres depuis l'URL
+        userEmail = Email ?? "";
+        userName = userEmail.Split('@')[0];
+        
+        // Ajouter le token aux headers HTTP
+        if (!string.IsNullOrEmpty(Token))
+        {
+            Http.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+        }
+    }
+
+    private bool IsActive(string path)
+    {
+        return Nav.Uri.Contains(path, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void Logout()
+    {
+        Nav.NavigateTo("/login");
+    }
+}

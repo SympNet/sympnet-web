@@ -1,0 +1,570 @@
+@page "/doctor/patients"
+@layout Shared.DoctorLayout
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+@inject HttpClient Http
+@using System.Text.Json     
+
+<PageTitle>SympNet — Mes Patients</PageTitle>
+
+<style>
+    .patients-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 32px;
+    }
+
+    .page-header {
+        margin-bottom: 32px;
+    }
+
+    .page-header h1 {
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+        color: #1F2937;
+        margin-bottom: 8px;
+    }
+
+    .page-header p {
+        color: #6B7280;
+        font-size: 14px;
+    }
+
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid rgba(13, 148, 136, 0.1);
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-card h3 {
+        font-size: 12px;
+        color: #6B7280;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .stat-number {
+        font-size: 32px;
+        font-weight: 800;
+        color: #0D9488;
+    }
+
+    .consultations-table {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid rgba(13, 148, 136, 0.1);
+        overflow: hidden;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        text-align: left;
+        padding: 16px 20px;
+        background: #F9FAFB;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6B7280;
+        border-bottom: 1px solid rgba(13, 148, 136, 0.1);
+    }
+
+    td {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(13, 148, 136, 0.05);
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    tr:hover {
+        background: #F9FAFB;
+        cursor: pointer;
+    }
+
+    .patient-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: white;
+        margin-right: 12px;
+    }
+
+    .patient-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .patient-name {
+        font-weight: 600;
+        color: #1F2937;
+    }
+
+    .patient-email {
+        font-size: 12px;
+        color: #6B7280;
+        margin-top: 2px;
+    }
+
+    .urgency-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 100px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .urgency-green {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+
+    .urgency-orange {
+        background: rgba(245, 158, 11, 0.1);
+        color: #F59E0B;
+    }
+
+    .urgency-red {
+        background: rgba(239, 68, 68, 0.1);
+        color: #EF4444;
+    }
+
+    .urgency-none {
+        background: rgba(107, 114, 128, 0.1);
+        color: #6B7280;
+    }
+
+    .confidence-bar {
+        width: 80px;
+        height: 6px;
+        background: #E5E7EB;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #0D9488, #14B8A6);
+        border-radius: 3px;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 24px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 32px;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .modal-header h3 {
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-size: 24px;
+        font-weight: 800;
+        color: #1F2937;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: #6B7280;
+    }
+
+    .ai-section {
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        border-radius: 16px;
+        padding: 20px;
+        margin-top: 20px;
+        color: white;
+    }
+
+    .diagnosis-item {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px;
+        color: #6B7280;
+    }
+
+    @@media (max-width: 768px) {
+        .patients-container {
+            padding: 16px;
+        }
+        .stats-cards {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        th, td {
+            padding: 12px;
+        }
+    }
+</style>
+
+<div class="patients-container">
+    <div class="page-header">
+        <h1>👥 Mes Patients</h1>
+        <p>Consultez l'historique des consultations et analyses IA</p>
+    </div>
+
+    <div class="stats-cards">
+        <div class="stat-card">
+            <h3>Total Patients</h3>
+            <div class="stat-number">@consultations.Select(c => c.PatientId).Distinct().Count()</div>
+        </div>
+        <div class="stat-card">
+            <h3>Consultations</h3>
+            <div class="stat-number">@consultations.Count</div>
+        </div>
+        <div class="stat-card">
+            <h3>Analysées par IA</h3>
+            <div class="stat-number">@consultations.Count(c => c.AIDiagnosisJson != null)</div>
+        </div>
+        <div class="stat-card">
+            <h3>Urgence Rouge</h3>
+            <div class="stat-number">@consultations.Count(c => c.AIUrgencyLevel == "Red")</div>
+        </div>
+    </div>
+
+    @if (consultations.Any())
+    {
+        <div class="consultations-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Date</th>
+                        <th>Symptômes</th>
+                        <th>Diagnostic IA</th>
+                        <th>Confiance</th>
+                        <th>Urgence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in consultations.OrderByDescending(x => x.CreatedAt))
+                    {
+                        <tr @onclick="() => ShowDetail(c)">
+                            <td>
+                                <div class="patient-info">
+                                    <div class="patient-avatar">@(c.PatientName.Length > 0 ? c.PatientName[0].ToString().ToUpper() : "P")</div>
+                                    <div>
+                                        <div class="patient-name">@c.PatientName</div>
+                                        <div class="patient-email">@c.PatientEmail</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="font-size: 13px;">@c.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                @c.SymptomDescription
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(c.AIDiagnosisJson))
+                                {
+                                    <strong>@GetTopDiagnosis(c.AIDiagnosisJson)</strong>
+                                }
+                                else
+                                {
+                                    <span style="color: #9CA3AF;">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (c.AIConfidenceScore.HasValue)
+                                {
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="confidence-bar">
+                                            <div class="confidence-fill" style="width: @(c.AIConfidenceScore.Value * 100)%"></div>
+                                        </div>
+                                        <span style="font-size: 12px; font-weight: 600;">@(c.AIConfidenceScore.Value.ToString("P0"))</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color: #9CA3AF;">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(c.AIUrgencyLevel))
+                                {
+                                    <span class="urgency-badge urgency-@c.AIUrgencyLevel.ToLower()">
+                                        @(c.AIUrgencyLevel == "Green" ? "🟢 Faible" : c.AIUrgencyLevel == "Orange" ? "🟠 Modérée" : "🔴 Urgente")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="urgency-badge urgency-none">Non analysé</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+            <h3>Aucune consultation</h3>
+            <p>Les consultations de vos patients apparaîtront ici</p>
+        </div>
+    }
+
+    @if (selectedConsultation != null)
+    {
+        <div class="modal-overlay" @onclick="() => selectedConsultation = null">
+            <div class="modal-content" @onclick:stopPropagation>
+                <div class="modal-header">
+                    <h3>Détails consultation</h3>
+                    <button class="close-btn" @onclick="() => selectedConsultation = null">✕</button>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 12px; color: #6B7280; margin-bottom: 4px;">Patient</div>
+                    <div style="font-weight: 600; font-size: 18px;">@selectedConsultation.PatientName</div>
+                    <div style="color: #6B7280;">@selectedConsultation.PatientEmail</div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 12px; color: #6B7280; margin-bottom: 4px;">Date</div>
+                    <div>@selectedConsultation.CreatedAt.ToString("dddd dd MMMM yyyy, HH:mm", new System.Globalization.CultureInfo("fr-FR"))</div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 12px; color: #6B7280; margin-bottom: 4px;">Symptômes décrits</div>
+                    <div style="background: #F9FAFB; border-radius: 12px; padding: 16px; margin-top: 8px;">
+                        @selectedConsultation.SymptomDescription
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(selectedConsultation.AIDiagnosisJson))
+                {
+                    <div class="ai-section">
+                        <h4 style="margin-bottom: 16px;">🤖 Analyse IA Multi-Agents</h4>
+                        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                            <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 999px; font-size: 12px;">
+                                Urgence: @(selectedConsultation.AIUrgencyLevel == "Green" ? "🟢 Faible" : selectedConsultation.AIUrgencyLevel == "Orange" ? "🟠 Modérée" : "🔴 Urgente")
+                            </span>
+                            <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 999px; font-size: 12px;">
+                                Confiance: @(selectedConsultation.AIConfidenceScore?.ToString("P0"))
+                            </span>
+                        </div>
+
+                        @try
+                        {
+                            var json = JsonDocument.Parse(selectedConsultation.AIDiagnosisJson);
+                            var hypotheses = json.RootElement.GetProperty("hypotheses");
+                            
+                            <div style="margin-top: 12px;">
+                                <div style="font-size: 13px; margin-bottom: 12px;">Hypothèses diagnostiques :</div>
+                                @foreach (var hyp in hypotheses.EnumerateArray())
+                                {
+                                    var diag = hyp.GetProperty("diagnosis").GetString();
+                                    var score = hyp.GetProperty("score").GetDouble();
+                                    var expl = hyp.TryGetProperty("explanation", out var e) ? e.GetString() : "";
+                                    
+                                    <div class="diagnosis-item">
+                                        <div style="font-weight: 700; margin-bottom: 6px;">@diag</div>
+                                        <div style="font-size: 12px; margin-bottom: 8px;">Score: @(score.ToString("P0"))</div>
+                                        <div style="height: 4px; background: rgba(255,255,255,0.2); border-radius: 999px;">
+                                            <div style="height: 4px; background: #3B82F6; border-radius: 999px; width: @(score * 100)%"></div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(expl))
+                                        {
+                                            <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">@expl</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        catch
+                        {
+                            <p>Données IA non disponibles</p>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div style="background: #FEF3C7; border-radius: 12px; padding: 16px; margin-top: 20px; color: #92400E;">
+                        ⏳ Cette consultation n'a pas encore été analysée par l'IA.
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? Token { get; set; }
+    [SupplyParameterFromQuery] public string? Email { get; set; }
+
+    private string userEmail = "";
+    private List<ConsultationDto> consultations = new();
+    private ConsultationDto? selectedConsultation = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userEmail = Email ?? "";
+        
+        if (!string.IsNullOrEmpty(Token))
+        {
+            Http.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+        }
+
+        await LoadConsultations();
+    }
+
+    private async Task LoadConsultations()
+    {
+        try
+        {
+            // Appel API pour les consultations
+            // var result = await Http.GetFromJsonAsync<List<ConsultationDto>>("api/consultations/doctor");
+            // if (result != null) consultations = result;
+            
+            consultations = GetDemoData();
+        }
+        catch
+        {
+            consultations = GetDemoData();
+        }
+    }
+
+    private string GetTopDiagnosis(string aiJson)
+    {
+        try
+        {
+            var json = JsonDocument.Parse(aiJson);
+            var hypotheses = json.RootElement.GetProperty("hypotheses");
+            if (hypotheses.GetArrayLength() > 0)
+            {
+                return hypotheses[0].GetProperty("diagnosis").GetString() ?? "—";
+            }
+        }
+        catch { }
+        return "—";
+    }
+
+    private void ShowDetail(ConsultationDto c) => selectedConsultation = c;
+
+    private List<ConsultationDto> GetDemoData() => new()
+    {
+        new ConsultationDto 
+        { 
+            Id = 1, 
+            PatientId = 101,
+            PatientName = "Ahmed Ben Ali", 
+            PatientEmail = "ahmed.benali@email.com",
+            SymptomDescription = "Fièvre élevée 39°C, toux productive avec expectorations jaunes, douleur thoracique droite, fatigue intense depuis 3 jours",
+            BodyPart = "Chest",
+            CreatedAt = DateTime.Now.AddHours(-2),
+            Status = "Pending",
+            AIUrgencyLevel = null,
+            AIConfidenceScore = null,
+            AIDiagnosisJson = null
+        },
+        new ConsultationDto 
+        { 
+            Id = 2, 
+            PatientId = 102,
+            PatientName = "Sonia Trabelsi", 
+            PatientEmail = "sonia.trabelsi@email.com",
+            SymptomDescription = "Maux de tête sévères, nausées, sensibilité à la lumière, vision floue depuis 2 jours",
+            BodyPart = "Head",
+            CreatedAt = DateTime.Now.AddHours(-5),
+            Status = "InProgress",
+            AIUrgencyLevel = "Orange",
+            AIConfidenceScore = 0.72,
+            AIDiagnosisJson = "{\"hypotheses\":[{\"diagnosis\":\"MIGRAINE AVEC AURA\",\"score\":0.82,\"explanation\":\"Triade classique migraine avec photophobie et nausées\"},{\"diagnosis\":\"CÉPHALÉE DE TENSION\",\"score\":0.55,\"explanation\":\"Symptômes compatibles mais moins spécifiques\"}],\"confidence_level\":0.72}"
+        },
+        new ConsultationDto 
+        { 
+            Id = 3, 
+            PatientId = 103,
+            PatientName = "Karim Mansouri", 
+            PatientEmail = "karim.mansouri@email.com",
+            SymptomDescription = "Douleurs abdominales intenses, nausées, vomissements, diarrhée aqueuse depuis 12h après repas au restaurant",
+            BodyPart = "Abdomen",
+            CreatedAt = DateTime.Now.AddDays(-1),
+            Status = "Done",
+            AIUrgencyLevel = "Green",
+            AIConfidenceScore = 0.88,
+            AIDiagnosisJson = "{\"hypotheses\":[{\"diagnosis\":\"GASTROENTÉRITE AIGUË\",\"score\":0.88,\"explanation\":\"Contexte alimentaire + triade digestive complète\"},{\"diagnosis\":\"INTOXICATION ALIMENTAIRE\",\"score\":0.70,\"explanation\":\"Délai court après repas suspect\"}],\"confidence_level\":0.88}"
+        },
+        new ConsultationDto 
+        { 
+            Id = 4, 
+            PatientId = 101,
+            PatientName = "Ahmed Ben Ali", 
+            PatientEmail = "ahmed.benali@email.com",
+            SymptomDescription = "Douleur thoracique persistante, essoufflement à l'effort, palpitations",
+            BodyPart = "Chest",
+            CreatedAt = DateTime.Now.AddDays(-3),
+            Status = "Done",
+            AIUrgencyLevel = "Red",
+            AIConfidenceScore = 0.91,
+            AIDiagnosisJson = "{\"hypotheses\":[{\"diagnosis\":\"ANGINE INSTABLE\",\"score\":0.91,\"explanation\":\"Douleur thoracique typique + facteurs de risque\"},{\"diagnosis\":\"EMBOLIE PULMONAIRE\",\"score\":0.65,\"explanation\":\"Dyspnée + douleur thoracique\"}],\"confidence_level\":0.91}"
+        }
+    };
+
+    public class ConsultationDto
+    {
+        public int Id { get; set; }
+        public int PatientId { get; set; }
+        public string PatientName { get; set; } = "";
+        public string PatientEmail { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+        public string SymptomDescription { get; set; } = "";
+        public string BodyPart { get; set; } = "";
+        public string Status { get; set; } = "";
+        public double? AIConfidenceScore { get; set; }
+        public string? AIUrgencyLevel { get; set; }
+        public string? AIDiagnosisJson { get; set; }
+    }
+}
