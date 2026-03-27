@@ -57,3 +57,14 @@ dkms.conf
 "bin/" 
 "obj/" 
 "*.cache" 
+# Secrets 
+appsettings.Development.json
+appsettings.Production.json
+secrets.json
+"appsettings.Development.json" 
+"appsettings.Development.json" 
+"appsettings.Production.json" 
+obj/ 
+bin/ 
+**/obj/ 
+**/bin/ 

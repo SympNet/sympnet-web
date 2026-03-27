@@ -1,495 +1,313 @@
 @page "/dashboard"
-@layout EmptyLayout
+@layout MainLayout
 @rendermode InteractiveServer
 @inject NavigationManager Nav
 @inject HttpClient Http
 @using System.Text.Json
 
-<PageTitle>SympNet — Tableau de Bord</PageTitle>
-
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<PageTitle>SympNet — Tableau de Bord Admin</PageTitle>
 
 <style>
-:root{
-  --b:#3ABFB8;--bd:#1A9E97;--bdd:#0D6E6A;--bddd:#084E4B;--bl:#6DD4CE;
-  --bp:#E6F8F7;--bm:#F0FBFA;--w:#fff;--off:#F4FAFA;
-  --bor:#DFF0EF;--bor2:#C5E8E7;
-  --ink:#0B2D2C;--inm:#2E5554;--ind:#5E8584;--inf:#9DBDBC;
-  --gr:#22C55E;--grb:#F0FDF4;--am:#F59E0B;--amb:#FFFBEB;
-  --re:#EF4444;--reb:#FEF2F2;--bl2:#3B82F6;--blb:#EFF6FF;
-  --sw:260px;--bh:66px;
-  --s0:0 1px 2px rgba(10,80,78,.05);--s1:0 2px 8px rgba(10,80,78,.09);
-  --s2:0 6px 24px rgba(10,80,78,.12);--s3:0 16px 48px rgba(10,80,78,.16);
-  --ea:cubic-bezier(.22,1,.36,1);
-  --fh:'Bricolage Grotesque',sans-serif;--fb:'Instrument Sans',sans-serif;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--fb);background:var(--off);color:var(--ink);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-button{cursor:pointer;font-family:var(--fb);border:none;background:none}
-input,select{font-family:var(--fb);outline:none}
-a{text-decoration:none;color:inherit}
-.app{display:flex;min-height:100vh}
-.sidebar{width:var(--sw);height:100vh;position:fixed;top:0;left:0;z-index:100;background:var(--w);border-right:1px solid var(--bor);display:flex;flex-direction:column}
-.sb-top{padding:20px 18px 14px;border-bottom:1px solid var(--bor)}
-.sb-brand{display:flex;align-items:center;gap:11px}
-.sb-bic{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--bdd),var(--b));flex-shrink:0;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(26,158,151,.25)}
-.sb-bname{font-family:var(--fh);font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.4px}
-.sb-bsub{font-size:9.5px;color:var(--inf);margin-top:3px}
-.sb-nav{flex:1;padding:12px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
-.nlbl{font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--inf);padding:10px 10px 5px;margin-top:4px}
-.nlbl:first-child{margin-top:0}
-.nitem{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:10px;font-size:13.5px;font-weight:500;color:var(--ind);cursor:pointer;transition:all .15s;position:relative}
-.nitem:hover{background:var(--bm);color:var(--bd)}
-.nitem.active{background:linear-gradient(90deg,var(--bp),var(--bm));color:var(--bdd);font-weight:600}
-.nitem.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:18px;background:var(--b);border-radius:0 3px 3px 0}
-.nitem svg{width:16px;height:16px;flex-shrink:0}
-.npill{margin-left:auto;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;line-height:1.5;background:var(--b)}
-.sb-foot{padding:12px 14px;border-top:1px solid var(--bor);display:flex;align-items:center;gap:10px}
-.sbav{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--bdd),var(--b));flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:13px;font-weight:700;color:#fff}
-.sbu{flex:1;min-width:0}
-.sbun{font-size:12.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sbur{font-size:11px;color:var(--inf);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sblo{width:30px;height:30px;border-radius:7px;color:var(--inf);display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
-.sblo:hover{background:var(--reb);color:var(--re)}.sblo svg{width:15px;height:15px}
-.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh}
-.topbar{height:var(--bh);background:var(--w);border-bottom:1px solid var(--bor);display:flex;align-items:center;justify-content:space-between;padding:0 26px;position:sticky;top:0;z-index:50;gap:14px}
-.bc{display:flex;align-items:center;gap:7px}
-.bcr{font-size:13px;color:var(--inf)}.bcs{font-size:13px;color:var(--inf)}
-.bcc{font-family:var(--fh);font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
-.tbr-right{display:flex;align-items:center;gap:9px}
-.role-tag{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.5px;text-transform:uppercase;background:var(--bp);color:var(--bdd)}
-.tbav-top{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--bdd),var(--b));display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:15px;font-weight:700;color:#fff}
-.cnt{flex:1;padding:26px;overflow-y:auto}
-.sec{display:none}
-.sec.active{display:block}
-.wb{border-radius:18px;padding:26px 30px;display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;position:relative;overflow:hidden;background:linear-gradient(135deg,var(--bddd),var(--bdd) 45%,var(--bd))}
-.wb::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 78% 50%,rgba(255,255,255,.05),transparent 60%)}
-.wbt{position:relative;z-index:1}
-.wbt h3{font-family:var(--fh);font-size:20px;font-weight:700;color:#fff;letter-spacing:-.4px;margin-bottom:5px}
-.wbt p{font-size:13.5px;color:rgba(255,255,255,.55)}
-.wbr{position:relative;z-index:1;text-align:right}
-.wbday{font-family:var(--fh);font-size:34px;font-weight:800;color:#fff;line-height:1;letter-spacing:-1px}
-.wbinf{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px}
-.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:22px}
-.sc{background:var(--w);border:1px solid var(--bor);border-radius:14px;padding:18px;box-shadow:var(--s0);display:flex;flex-direction:column;gap:11px;transition:all .2s var(--ea)}
-.sc:hover{transform:translateY(-2px);box-shadow:var(--s2)}
-.sct{display:flex;align-items:flex-start;justify-content:space-between}
-.sic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sic svg{width:19px;height:19px}
-.sic.t{background:rgba(58,191,184,.12);color:var(--bd)}.sic.g{background:var(--grb);color:var(--gr)}
-.sic.a{background:var(--amb);color:var(--am)}.sic.b{background:var(--blb);color:var(--bl2)}
-.sbdg{font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px}
-.sbdg.up{background:var(--grb);color:var(--gr)}.sbdg.nu{background:var(--bp);color:var(--bd)}
-.sv{font-family:var(--fh);font-size:28px;font-weight:800;color:var(--ink);letter-spacing:-1px;line-height:1}
-.sl{font-size:12.5px;color:var(--inf);margin-top:3px}
-.dg{display:grid;grid-template-columns:1fr 320px;gap:18px}
-.card{background:var(--w);border:1px solid var(--bor);border-radius:14px;box-shadow:var(--s0);overflow:hidden}
-.chd{padding:16px 18px;border-bottom:1px solid var(--bor);display:flex;align-items:center;justify-content:space-between}
-.chd h3{font-family:var(--fh);font-size:14px;font-weight:700;color:var(--ink);letter-spacing:-.2px}
-.bgsm{font-size:12.5px;font-weight:600;color:var(--bd);cursor:pointer;transition:color .15s;background:none;border:none}
-.bgsm:hover{color:var(--bdd)}
-.rl{padding:6px 0}
-.ri{display:flex;align-items:center;gap:11px;padding:9px 18px;cursor:pointer;transition:background .12s}
-.ri:hover{background:var(--bm)}
-.rav{width:34px;height:34px;border-radius:9px;flex-shrink:0;background:linear-gradient(135deg,var(--bdd),var(--b));display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:13px;font-weight:700;color:#fff}
-.rinf{flex:1;min-width:0}
-.rn{font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rs{font-size:11.5px;color:var(--inf);margin-top:2px}
-.pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;flex-shrink:0}
-.pill.on{background:var(--grb);color:var(--gr)}.pill.off{background:var(--amb);color:var(--am)}
-.spbars{padding:12px 18px;display:flex;flex-direction:column;gap:13px}
-.sprow .spmeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.spnm{font-size:12.5px;font-weight:500;color:var(--inm)}.spcn{font-size:11.5px;color:var(--inf)}
-.sptrk{height:6px;background:var(--bor);border-radius:999px;overflow:hidden}
-.spfil{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--bdd),var(--bl))}
-.tsh{background:var(--w);border:1px solid var(--bor);border-radius:14px;box-shadow:var(--s0);overflow:hidden}
-table{width:100%;border-collapse:collapse}
-thead tr{background:var(--bm)}
-th{padding:11px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--inf);border-bottom:1.5px solid var(--bor);white-space:nowrap}
-tbody tr{border-bottom:1px solid var(--bor);transition:background .1s}
-tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:var(--bm)}
-td{padding:13px 16px;font-size:13.5px;color:var(--inm);vertical-align:middle}
-.dc{display:flex;align-items:center;gap:10px}
-.dav{width:34px;height:34px;border-radius:9px;flex-shrink:0;background:linear-gradient(135deg,var(--bdd),var(--b));display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:13px;font-weight:700;color:#fff}
-.dnm{font-size:13.5px;font-weight:600;color:var(--ink)}.dem{font-size:11.5px;color:var(--inf);margin-top:2px}
-.stag{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--bp);color:var(--bdd)}
-.rtg{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:600}
-.str{color:#F59E0B}
-.ib{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--inf);transition:all .14s;cursor:pointer;border:none;background:none}
-.ib svg{width:14px;height:14px}
-.ib:hover{background:var(--bp);color:var(--bd)}.ib.del:hover{background:var(--reb);color:var(--re)}
-.ac{display:flex;align-items:center;gap:5px}
-.emp{text-align:center;padding:55px 20px}
-.empic{font-size:42px;margin-bottom:10px}
-.emp h4{font-size:15px;font-weight:600;color:var(--ind);margin-bottom:5px}
-.emp p{font-size:13px;color:var(--inf)}
-.add-form{background:var(--w);border:1px solid var(--bor);border-radius:18px;box-shadow:var(--s1);max-width:680px;overflow:hidden;margin-bottom:24px}
-.add-form-hd{padding:22px 26px;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:15px}
-.add-form-ic{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--bdd),var(--b));display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.add-form-ic svg{width:21px;height:21px;color:#fff}
-.add-form-body{padding:26px}
-.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
-.ff label{display:block;font-size:12.5px;font-weight:600;color:var(--inm);margin-bottom:7px}
-.ff input,.ff select{width:100%;padding:11px 13px;border:1.5px solid var(--bor2);border-radius:10px;font-size:13.5px;color:var(--ink);background:var(--w);transition:border-color .18s}
-.ff input:focus,.ff select:focus{border-color:var(--b);box-shadow:0 0 0 3px rgba(58,191,184,.12)}
-.facs{display:flex;align-items:center;justify-content:flex-end;gap:11px;margin-top:22px;padding-top:20px;border-top:1px solid var(--bor)}
-.bcan{padding:10px 18px;border:1.5px solid var(--bor2);border-radius:10px;font-size:13.5px;font-weight:600;color:var(--ind);transition:all .15s}
-.bcan:hover{border-color:var(--b);color:var(--bd)}
-.bsub{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:linear-gradient(135deg,var(--bdd),var(--b));color:#fff;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:0 4px 14px rgba(26,158,151,.28);transition:all .2s;border:none;cursor:pointer}
-.bsub:hover{transform:translateY(-1px)}
-.toast{position:fixed;bottom:22px;right:22px;z-index:9999;color:#fff;padding:13px 17px;border-radius:14px;box-shadow:var(--s3);font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:9px;transition:all .3s;max-width:320px}
-.toast.ok{background:linear-gradient(135deg,var(--bdd),var(--b))}.toast.er{background:linear-gradient(135deg,#7F1D1D,var(--re))}
-@@media(max-width:1080px){.sgrid{grid-template-columns:1fr 1fr}.dg{grid-template-columns:1fr}}
-@@media(max-width:820px){.sidebar{display:none}.main{margin-left:0}}
-@@media(max-width:580px){.sgrid{grid-template-columns:1fr}.cnt{padding:14px}}
+    :root {
+        --primary: #0D9488;
+        --success: #10B981;
+        --warning: #F59E0B;
+        --gray: #6B7280;
+        --white: #FFFFFF;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --radius-lg: 16px;
+        --radius-xl: 24px;
+    }
+
+    .dashboard-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .welcome-banner {
+        background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+        border-radius: var(--radius-xl);
+        padding: 32px 40px;
+        margin-bottom: 32px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .welcome-banner h1 {
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+        color: white;
+        margin-bottom: 8px;
+    }
+
+    .welcome-banner p {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+    }
+
+    .welcome-date {
+        text-align: right;
+        color: white;
+    }
+
+    .welcome-date .day {
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-size: 34px;
+        font-weight: 800;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .stat-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid rgba(13, 148, 136, 0.1);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 12px;
+    }
+
+    .stat-icon.teal { background: rgba(13, 148, 136, 0.1); color: #0D9488; }
+    .stat-icon.green { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+    .stat-icon.orange { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+    .stat-icon.blue { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
+
+    .stat-value {
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-size: 32px;
+        font-weight: 800;
+        color: #1F2937;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: var(--gray);
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 24px;
+    }
+
+    .card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(13, 148, 136, 0.1);
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(13, 148, 136, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card-header h3 {
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .doctor-list {
+        padding: 8px 0;
+    }
+
+    .doctor-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+    }
+
+    .doctor-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #0D9488, #14B8A6);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: white;
+    }
+
+    .doctor-info {
+        flex: 1;
+    }
+
+    .doctor-name {
+        font-weight: 600;
+        margin-bottom: 2px;
+    }
+
+    .doctor-speciality {
+        font-size: 12px;
+        color: var(--gray);
+    }
+
+    .doctor-status {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 100px;
+    }
+
+    .doctor-status.active { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+
+    .speciality-list {
+        padding: 16px 20px;
+    }
+
+    .speciality-item {
+        margin-bottom: 16px;
+    }
+
+    .speciality-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        font-size: 13px;
+    }
+
+    .speciality-bar {
+        height: 6px;
+        background: rgba(13, 148, 136, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .speciality-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #0D9488, #14B8A6);
+        border-radius: 3px;
+    }
+
+    @@media (max-width: 1024px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        .content-grid { grid-template-columns: 1fr; }
+    }
 </style>
 
-<div class="app">
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sb-top">
-      <div class="sb-brand">
-        <div class="sb-bic">
-          <svg width="20" height="20" viewBox="0 0 26 26" fill="none">
-            <line x1="13" y1="2" x2="13" y2="24" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M13 7C9.5 5 6 6.5 6 9.5C6 12.5 9.5 12.5 13 11" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
-            <path d="M13 7C16.5 5 20 6.5 20 9.5C20 12.5 16.5 12.5 13 11" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
-            <path d="M13 10C10 11.5 10 14.5 13 15.5C10 16.5 10 19.5 13 21" stroke="rgba(255,255,255,.8)" stroke-width="1.3" stroke-linecap="round" fill="none"/>
-            <path d="M13 10C16 11.5 16 14.5 13 15.5C16 16.5 16 19.5 13 21" stroke="rgba(255,255,255,.8)" stroke-width="1.3" stroke-linecap="round" fill="none"/>
-            <circle cx="13" cy="23" r="1.8" fill="rgba(255,255,255,.7)"/>
-          </svg>
+<div class="dashboard-container">
+    <div class="welcome-banner">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>Bonjour, Administrateur 👋</h1>
+                <p>Voici l'aperçu de votre plateforme SympNet</p>
+            </div>
+            <div class="welcome-date">
+                <div class="day">@DateTime.Now.Day</div>
+                <div class="date">@DateTime.Now.ToString("dddd dd MMMM yyyy", new System.Globalization.CultureInfo("fr-FR"))</div>
+            </div>
         </div>
-        <div><div class="sb-bname">SympNet</div><div class="sb-bsub">Admin Portal</div></div>
-      </div>
     </div>
-    <nav class="sb-nav">
-      <div class="nlbl">Vue Générale</div>
-      <div class="nitem @(activeSection == "dashboard" ? "active" : "")" @onclick='() => SetSection("dashboard")'>
-        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/></svg>
-        Tableau de bord
-      </div>
-      <div class="nlbl">Gestion</div>
-      <div class="nitem @(activeSection == "doctors" ? "active" : "")" @onclick='() => SetSection("doctors")'>
-        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
-        Médecins<span class="npill">@doctors.Count</span>
-      </div>
-      <div class="nitem @(activeSection == "add-doctor" ? "active" : "")" @onclick='() => SetSection("add-doctor")'>
-        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-        Ajouter Médecin
-      </div>
-      <div class="nlbl">Analytiques</div>
-      <div class="nitem @(activeSection == "stats" ? "active" : "")" @onclick='() => SetSection("stats")'>
-        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
-        Statistiques
-      </div>
-    </nav>
-    <div class="sb-foot">
-      <div class="sbav">@(userEmail.Length > 0 ? userEmail[0].ToString().ToUpper() : "A")</div>
-      <div class="sbu">
-        <div class="sbun">Administrateur</div>
-        <div class="sbur">@userEmail</div>
-      </div>
-      <button class="sblo" @onclick="Logout" title="Déconnexion">
-        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>
-      </button>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon teal"><i class="fas fa-user-md"></i></div>
+            <div class="stat-value">@stats.TotalDoctors</div>
+            <div class="stat-label">Total Médecins</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-value">@stats.ActiveDoctors</div>
+            <div class="stat-label">Médecins Actifs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange"><i class="fas fa-clock"></i></div>
+            <div class="stat-value">@stats.PendingDoctors</div>
+            <div class="stat-label">En attente</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-procedures"></i></div>
+            <div class="stat-value">@stats.TotalPatients</div>
+            <div class="stat-label">Total Patients</div>
+        </div>
     </div>
-  </aside>
 
-  <!-- MAIN -->
-  <div class="main">
-    <header class="topbar">
-      <div class="bc">
-        <span class="bcr">SympNet</span>
-        <span class="bcs"> / </span>
-        <span class="bcc">@SectionTitle</span>
-      </div>
-      <div class="tbr-right">
-        <span class="role-tag">ADMIN</span>
-        <div class="tbav-top">@(userEmail.Length > 0 ? userEmail[0].ToString().ToUpper() : "A")</div>
-      </div>
-    </header>
-
-    <div class="cnt">
-
-      <!-- DASHBOARD -->
-      <div id="sec-dashboard" class="sec @(activeSection == "dashboard" ? "active" : "")">
-        <div class="wb">
-          <div class="wbt">
-            <h3>Bonjour, Administrateur 👋</h3>
-            <p>Voici l'aperçu de votre plateforme SympNet.</p>
-          </div>
-          <div class="wbr">
-            <div class="wbday">@DateTime.Now.Day</div>
-            <div class="wbinf">@DateTime.Now.ToString("dddd dd MMMM yyyy", new System.Globalization.CultureInfo("fr-FR"))</div>
-          </div>
-        </div>
-
-        <div class="sgrid">
-          <div class="sc">
-            <div class="sct">
-              <div class="sic t"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg></div>
-              <span class="sbdg up">Total</span>
+    <div class="content-grid">
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-user-md"></i> Médecins Récents</h3>
+                <button @onclick="GoToDoctors">Voir tout →</button>
             </div>
-            <div><div class="sv">@stats.TotalDoctors</div><div class="sl">Total Médecins</div></div>
-          </div>
-          <div class="sc">
-            <div class="sct">
-              <div class="sic g"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg></div>
-              <span class="sbdg up">Actifs</span>
-            </div>
-            <div><div class="sv">@stats.ActiveDoctors</div><div class="sl">Médecins Actifs</div></div>
-          </div>
-          <div class="sc">
-            <div class="sct">
-              <div class="sic a"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg></div>
-              <span class="sbdg nu">En attente</span>
-            </div>
-            <div><div class="sv">@stats.PendingDoctors</div><div class="sl">En attente</div></div>
-          </div>
-          <div class="sc">
-            <div class="sct">
-              <div class="sic b"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg></div>
-              <span class="sbdg up">↑ 24%</span>
-            </div>
-            <div><div class="sv">@stats.TotalPatients</div><div class="sl">Total Patients</div></div>
-          </div>
-        </div>
-
-        <div class="dg">
-          <div class="card">
-            <div class="chd"><h3>Médecins Récents</h3><button class="bgsm" @onclick='() => SetSection("doctors")'>Voir tout →</button></div>
-            <div class="rl">
-              @if (!doctors.Any())
-              {
-                <div class="emp"><div class="empic">🩺</div><h4>Aucun médecin</h4><p>Ajoutez le premier médecin</p></div>
-              }
-              else
-              {
+            <div class="doctor-list">
                 @foreach (var d in doctors.TakeLast(5).Reverse())
                 {
-                  <div class="ri">
-                    <div class="rav">@d.FirstName[0]@d.LastName[0]</div>
-                    <div class="rinf">
-                      <div class="rn">Dr. @d.FirstName @d.LastName</div>
-                      <div class="rs">@d.Speciality</div>
+                    <div class="doctor-item">
+                        <div class="doctor-avatar">@d.FirstName[0]@d.LastName[0]</div>
+                        <div class="doctor-info">
+                            <div class="doctor-name">Dr. @d.FirstName @d.LastName</div>
+                            <div class="doctor-speciality">@d.Speciality</div>
+                        </div>
+                        <span class="doctor-status active">Actif</span>
                     </div>
-                    <span class="pill @(d.IsValidated ? "on" : "off")">@(d.IsValidated ? "Actif" : "Inactif")</span>
-                  </div>
                 }
-              }
             </div>
-          </div>
-          <div class="card">
-            <div class="chd"><h3>Par Spécialité</h3></div>
-            <div class="spbars">
-              @{
-                var grouped = doctors.GroupBy(d => d.Speciality).OrderByDescending(g => g.Count()).Take(6).ToList();
-                var maxCount = grouped.Any() ? grouped.Max(g => g.Count()) : 1;
-              }
-              @foreach (var g in grouped)
-              {
-                <div class="sprow">
-                  <div class="spmeta"><span class="spnm">@g.Key</span><span class="spcn">@g.Count() dr.</span></div>
-                  <div class="sptrk"><div class="spfil" style="width:@(g.Count() * 100 / maxCount)%"></div></div>
-                </div>
-              }
-            </div>
-          </div>
         </div>
-      </div>
 
-      <!-- DOCTORS -->
-      <div class="sec @(activeSection == "doctors" ? "active" : "")">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
-          <div style="font-size:13.5px;color:var(--inf)">Affichage de <b style="color:var(--ink)">@FilteredDoctors.Count()</b> médecins</div>
-          <button @onclick='() => SetSection("add-doctor")' style="display:inline-flex;align-items:center;gap:7px;padding:9px 17px;background:linear-gradient(135deg,var(--bdd),var(--b));color:#fff;border-radius:10px;font-size:13.5px;font-weight:600;border:none;cursor:pointer">
-            <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-            Ajouter Médecin
-          </button>
-        </div>
-        <div class="tsh">
-          <table>
-            <thead><tr><th>Médecin</th><th>Spécialité</th><th>Licence</th><th>Note</th><th>Statut</th><th>Actions</th></tr></thead>
-            <tbody>
-              @if (!FilteredDoctors.Any())
-              {
-                <tr><td colspan="6"><div class="emp"><div class="empic">🩺</div><h4>Aucun médecin trouvé</h4></div></td></tr>
-              }
-              else
-              {
-                @foreach (var d in FilteredDoctors)
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-chart-pie"></i> Par Spécialité</h3>
+            </div>
+            <div class="speciality-list">
+                @{
+                    var grouped = doctors.GroupBy(d => d.Speciality).OrderByDescending(g => g.Count()).Take(6).ToList();
+                    var maxCount = grouped.Any() ? grouped.Max(g => g.Count()) : 1;
+                }
+                @foreach (var g in grouped)
                 {
-                  <tr>
-                    <td>
-                      <div class="dc">
-                        <div class="dav">@d.FirstName[0]@d.LastName[0]</div>
-                        <div><div class="dnm">Dr. @d.FirstName @d.LastName</div><div class="dem">@d.Email</div></div>
-                      </div>
-                    </td>
-                    <td><span class="stag">@d.Speciality</span></td>
-                    <td style="font-size:12px;color:var(--inf)">@d.LicenseNumber</td>
-                    <td><div class="rtg"><span class="str">★</span>@d.AverageRating.ToString("F1")</div></td>
-                    <td><span class="pill @(d.IsValidated ? "on" : "off")">@(d.IsValidated ? "Actif" : "Inactif")</span></td>
-                    <td>
-                      <div class="ac">
-                        @if (d.IsValidated)
-                        {
-                          <button class="ib" title="Désactiver" @onclick="() => ToggleDoctor(d.Id, false)">
-                            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524L13.477 14.89zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"/></svg>
-                          </button>
-                        }
-                        else
-                        {
-                          <button class="ib" title="Activer" @onclick="() => ToggleDoctor(d.Id, true)">
-                            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                          </button>
-                        }
-                        <button class="ib del" title="Supprimer" @onclick="() => DeleteDoctor(d.Id)">
-                          <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                    <div class="speciality-item">
+                        <div class="speciality-header">
+                            <span>@g.Key</span>
+                            <span>@g.Count() dr.</span>
+                        </div>
+                        <div class="speciality-bar">
+                            <div class="speciality-fill" style="width: @(g.Count() * 100 / maxCount)%"></div>
+                        </div>
+                    </div>
                 }
-              }
-            </tbody>
-          </table>
+            </div>
         </div>
-      </div>
-
-      <!-- ADD DOCTOR -->
-      <div class="sec @(activeSection == "add-doctor" ? "active" : "")">
-        <div class="add-form">
-          <div class="add-form-hd">
-            <div class="add-form-ic"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg></div>
-            <div>
-              <h3 style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--ink)">Ajouter un Nouveau Médecin</h3>
-              <p style="font-size:13px;color:var(--inf);margin-top:4px">Le médecin reçoit ses identifiants par email automatiquement</p>
-            </div>
-          </div>
-          <div class="add-form-body">
-            <div style="font-size:10.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--inf);margin-bottom:14px">Informations Personnelles</div>
-            <div class="fgrid">
-              <div class="ff"><label>Prénom *</label><input @bind="newDoc.FirstName" placeholder="Ahmed"/></div>
-              <div class="ff"><label>Nom *</label><input @bind="newDoc.LastName" placeholder="Ben Ali"/></div>
-              <div class="ff"><label>Email *</label><input type="email" @bind="newDoc.Email" placeholder="doctor@gmail.com"/></div>
-              <div class="ff"><label>Téléphone</label><input @bind="newDoc.PhoneNumber" placeholder="+216 XX XXX XXX"/></div>
-            </div>
-            <div style="font-size:10.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--inf);margin-bottom:14px">Informations Professionnelles</div>
-            <div class="fgrid">
-              <div class="ff">
-                <label>Spécialité *</label>
-                <select @bind="newDoc.Speciality">
-                  <option value="">— Sélectionner —</option>
-                  <option>Cardiologie</option><option>Dermatologie</option><option>Neurologie</option>
-                  <option>Pédiatrie</option><option>Orthopédie</option><option>Ophtalmologie</option>
-                  <option>Psychiatrie</option><option>Gynécologie</option><option>Médecine Générale</option>
-                  <option>Urgentologie</option><option>Radiologie</option>
-                </select>
-              </div>
-              <div class="ff"><label>Numéro Licence *</label><input @bind="newDoc.LicenseNumber" placeholder="MED-2026-001"/></div>
-              <div class="ff" style="grid-column:1/-1"><label>Adresse</label><input @bind="newDoc.Address" placeholder="Tunis, Tunisie"/></div>
-            </div>
-            @if (addDocError != null)
-            {
-              <div style="margin-top:12px;padding:11px 14px;background:var(--reb);border:1px solid #FECACA;border-radius:10px;font-size:13px;color:var(--re)">@addDocError</div>
-            }
-            <div class="facs">
-              <button class="bcan" @onclick='() => SetSection("doctors")'>Annuler</button>
-              <button class="bsub" @onclick="SubmitDoctor" disabled="@addingDoc">
-                @if (addingDoc) { <span>Création...</span> }
-                else { <span>Créer &amp; Envoyer Identifiants</span> }
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- STATS -->
-      <div class="sec @(activeSection == "stats" ? "active" : "")">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
-          <div style="background:var(--w);border:1px solid var(--bor);border-radius:14px;padding:22px">
-            <h3 style="font-family:var(--fh);font-size:14px;font-weight:700;color:var(--ink);margin-bottom:18px">Résumé Plateforme</h3>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bor)"><span style="font-size:13px;color:var(--ind)">Total Médecins</span><span style="font-family:var(--fh);font-size:22px;font-weight:800;color:var(--ink)">@stats.TotalDoctors</span></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bor)"><span style="font-size:13px;color:var(--ind)">Médecins Actifs</span><span style="font-family:var(--fh);font-size:22px;font-weight:800;color:var(--gr)">@stats.ActiveDoctors</span></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bor)"><span style="font-size:13px;color:var(--ind)">En attente</span><span style="font-family:var(--fh);font-size:22px;font-weight:800;color:var(--am)">@stats.PendingDoctors</span></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0"><span style="font-size:13px;color:var(--ind)">Total Patients</span><span style="font-family:var(--fh);font-size:22px;font-weight:800;color:var(--ink)">@stats.TotalPatients</span></div>
-          </div>
-          <div style="background:var(--w);border:1px solid var(--bor);border-radius:14px;padding:22px">
-            <h3 style="font-family:var(--fh);font-size:14px;font-weight:700;color:var(--ink);margin-bottom:18px">Distribution par Spécialité</h3>
-            @{
-              var sg = doctors.GroupBy(d => d.Speciality).OrderByDescending(g => g.Count()).ToList();
-              var sm = sg.Any() ? sg.Max(g => g.Count()) : 1;
-            }
-            @foreach (var g in sg)
-            {
-              <div style="margin-bottom:15px">
-                <div style="display:flex;justify-content:space-between;margin-bottom:7px">
-                  <span style="font-size:13px;color:var(--inm);font-weight:500">@g.Key</span>
-                  <span style="font-size:12px;color:var(--inf)">@(doctors.Any() ? Math.Round((double)g.Count() / doctors.Count * 100) : 0)%</span>
-                </div>
-                <div style="height:7px;background:var(--bor);border-radius:999px;overflow:hidden">
-                  <div style="height:100%;border-radius:999px;background:linear-gradient(90deg,var(--bdd),var(--bl));width:@(g.Count() * 100 / sm)%"></div>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-
     </div>
-  </div>
 </div>
-
-@if (showToast)
-{
-  <div class="toast @toastType">@toastMessage</div>
-}
 
 @code {
     [SupplyParameterFromQuery] public string? Token { get; set; }
     [SupplyParameterFromQuery] public string? Role { get; set; }
     [SupplyParameterFromQuery] public string? Email { get; set; }
 
-    private string activeSection = "dashboard";
-    private string userEmail = "";
-    private string SectionTitle => activeSection switch {
-        "dashboard" => "Tableau de bord",
-        "doctors" => "Médecins",
-        "add-doctor" => "Ajouter Médecin",
-        "stats" => "Statistiques",
-        _ => "Dashboard"
-    };
-
     private List<DoctorDto> doctors = new();
     private StatsDto stats = new();
-    private NewDoctorForm newDoc = new();
-    private string? addDocError = null;
-    private bool addingDoc = false;
-    private bool showToast = false;
-    private string toastMessage = "";
-    private string toastType = "ok";
 
     protected override async Task OnInitializedAsync()
     {
-        userEmail = Email ?? "";
-
-        //  Fix 2 — Rediriger doctor vers sa propre page
-        if ((Role ?? "").ToLower() == "doctor")
-        {
-            Nav.NavigateTo($"/doctor/dashboard?token={Token}&email={Email}");
-            return;
-        }
-
-        // ✅ Fix 3 — Token Bearer sur toutes les requêtes
         if (!string.IsNullOrEmpty(Token))
         {
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
         }
-        Console.WriteLine($"Token reçu: {Token?.Substring(0, Math.Min(20, Token?.Length ?? 0))}...");
-Console.WriteLine($"Role reçu: {Role}");
         await LoadData();
     }
 
@@ -499,123 +317,15 @@ Console.WriteLine($"Role reçu: {Role}");
         {
             var docs = await Http.GetFromJsonAsync<List<DoctorDto>>("api/admin/doctors");
             if (docs != null) doctors = docs;
-
             var s = await Http.GetFromJsonAsync<StatsDto>("api/admin/stats");
             if (s != null) stats = s;
         }
         catch { }
-        StateHasChanged();
     }
 
-    private IEnumerable<DoctorDto> FilteredDoctors => doctors;
-    private void SetSection(string section) => activeSection = section;
-
-private async Task ToggleDoctor(int id, bool activate)
-{
-    try
+    private void GoToDoctors()
     {
-        if (!string.IsNullOrEmpty(Token))
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
-
-        var endpoint = activate
-            ? $"api/admin/doctors/{id}/activate"
-            : $"api/admin/doctors/{id}/deactivate";
-
-        var response = await Http.PutAsync(endpoint, null);
-
-        if (response.IsSuccessStatusCode)
-        {
-            //  Mettre à jour localement IMMÉDIATEMENT sans attendre l'API
-            var doc = doctors.FirstOrDefault(d => d.Id == id);
-            if (doc != null)
-            {
-                doc.IsValidated = activate;
-                StateHasChanged();
-            }
-            // Puis recharger depuis l'API
-            await LoadData();
-            ShowToast(activate ? "✅ Médecin activé avec succès." : "🔒 Médecin désactivé.", "ok");
-        }
-        else
-        {
-            var content = await response.Content.ReadAsStringAsync();
-            ShowToast(" Erreur : " + response.StatusCode + " - " + content, "er");
-        }
-    }
-    catch (Exception ex)
-    {
-        ShowToast("❌ " + ex.Message, "er");
-    }
-}
-
-    private async Task DeleteDoctor(int id)
-    {
-        try
-        {
-            if (!string.IsNullOrEmpty(Token))
-                Http.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
-
-            await Http.DeleteAsync($"api/admin/doctors/{id}");
-            await LoadData();
-            ShowToast("🗑️ Médecin supprimé.", "ok");
-        }
-        catch { ShowToast("❌ Erreur lors de la suppression.", "er"); }
-    }
-
-    private async Task SubmitDoctor()
-    {
-        addDocError = null;
-        if (string.IsNullOrWhiteSpace(newDoc.FirstName) || string.IsNullOrWhiteSpace(newDoc.LastName) ||
-            string.IsNullOrWhiteSpace(newDoc.Email) || string.IsNullOrWhiteSpace(newDoc.Speciality) ||
-            string.IsNullOrWhiteSpace(newDoc.LicenseNumber))
-        {
-            addDocError = "Veuillez remplir tous les champs obligatoires.";
-            return;
-        }
-        addingDoc = true;
-        try
-        {
-            if (!string.IsNullOrEmpty(Token))
-                Http.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
-
-            var response = await Http.PostAsJsonAsync("api/admin/doctors", newDoc);
-            if (response.IsSuccessStatusCode)
-            {
-                newDoc = new();
-                await LoadData();
-                SetSection("doctors");
-                ShowToast("✅ Médecin créé et identifiants envoyés par email.", "ok");
-            }
-            else
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var json = JsonDocument.Parse(content);
-                addDocError = json.RootElement.TryGetProperty("message", out var msg)
-                    ? msg.GetString() : "Erreur lors de la création.";
-            }
-        }
-        catch { addDocError = "Erreur de connexion à l'API."; }
-        finally { addingDoc = false; }
-    }
-
-    private void Logout() => Nav.NavigateTo("/login");
-
-    private System.Threading.Timer? toastTimer;
-    private void ShowToast(string message, string type)
-    {
-        toastMessage = message;
-        toastType = type;
-        showToast = true;
-        StateHasChanged();
-        toastTimer?.Dispose();
-        toastTimer = new System.Threading.Timer(_ =>
-        {
-            showToast = false;
-            InvokeAsync(StateHasChanged);
-        }, null, 3500, System.Threading.Timeout.Infinite);
+        Nav.NavigateTo($"/dashboard?token={Token}&role=admin&email={Email}&section=doctors");
     }
 
     public class DoctorDto
@@ -624,11 +334,7 @@ private async Task ToggleDoctor(int id, bool activate)
         public string FirstName { get; set; } = "";
         public string LastName { get; set; } = "";
         public string Speciality { get; set; } = "";
-        public string LicenseNumber { get; set; } = "";
-        public string Address { get; set; } = "";
-        public double AverageRating { get; set; }
         public bool IsValidated { get; set; }
-        public string Email { get; set; } = "";
     }
 
     public class StatsDto
@@ -637,18 +343,5 @@ private async Task ToggleDoctor(int id, bool activate)
         public int TotalDoctors { get; set; }
         public int ActiveDoctors { get; set; }
         public int PendingDoctors { get; set; }
-    }
-
-    public class NewDoctorForm
-    {
-        public string FirstName { get; set; } = "";
-        public string LastName { get; set; } = "";
-        public string Email { get; set; } = "";
-        public string PhoneNumber { get; set; } = "";
-        public string Speciality { get; set; } = "";
-        public string LicenseNumber { get; set; } = "";
-        public string Address { get; set; } = "";
-        public double Latitude { get; set; } = 36.8065;
-        public double Longitude { get; set; } = 10.1815;
     }
 }

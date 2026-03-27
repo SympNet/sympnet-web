@@ -1,13 +1,47 @@
 ﻿@inherits LayoutComponentBase
+@using SympNet.Web.Components.Layout
+<PageTitle>SympNet</PageTitle>
 
-<main>
-    <article class="content px-4">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Instrument Sans', sans-serif;
+        background: linear-gradient(135deg, #F0F9FF 0%, #E6F7F5 100%);
+        min-height: 100vh;
+        color: #1F2937;
+    }
+
+    .app {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    .main-content {
+        flex: 1;
+        margin-left: 280px;
+        min-height: 100vh;
+        padding: 24px 32px;
+    }
+
+    @@media (max-width: 768px) {
+        .main-content {
+            margin-left: 0;
+            padding: 16px;
+        }
+    }
+</style>
+
+<div class="app">
+    <Sidebar />
+    <div class="main-content">
         @Body
-    </article>
-</main>
-
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    </div>
 </div>

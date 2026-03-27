@@ -1,7 +1,6 @@
-using MailKit.Net.Smtp;
-using MailKit.Security;
+using System.Net;
+using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
-using MimeKit;
 
 namespace SympNet.Infrastructure.Services;
 
@@ -14,142 +13,108 @@ public class EmailService
         _config = config;
     }
 
-    public async Task SendDoctorCredentialsAsync(
-        string toEmail,
-        string firstName,
-        string tempPassword)
+    // Shared SMTP sender
+    private async Task SendAsync(MailMessage mail)
     {
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(
-            "SympNet Platform",
-            _config["Email:From"] ?? "sympnet.platform@gmail.com"));
-        message.To.Add(new MailboxAddress(
-            firstName,
-            toEmail ?? string.Empty));
-        message.Subject = "Welcome to SympNet - Your Login Credentials";
-        message.Body = new TextPart("html")
-        {
-            Text = $@"
-                <h2>Welcome to SympNet, Dr. {firstName}!</h2>
-                <p>Your account has been created by the administrator.</p>
-                <p><strong>Email:</strong> {toEmail}</p>
-                <p><strong>Temporary Password:</strong> {tempPassword}</p>
-                <p>Please login and change your password immediately.</p>
-                <br/>
-                <p>Best regards,<br/>SympNet Team</p>
-            "
-        };
+        var host = _config["Email:SmtpHost"] ?? throw new Exception("Email:SmtpHost not configured");
+        var port = int.Parse(_config["Email:SmtpPort"] ?? "587");
+        var username = _config["Email:Username"] ?? throw new Exception("Email:Username not configured");
+        var password = _config["Email:Password"] ?? throw new Exception("Email:Password not configured");
 
-        using var smtp = new SmtpClient();
-        await smtp.ConnectAsync(
-            _config["Email:SmtpHost"],
-            int.Parse(_config["Email:SmtpPort"]!),
-            SecureSocketOptions.StartTls);
-        await smtp.AuthenticateAsync(
-            _config["Email:Username"],
-            _config["Email:Password"]);
-        await smtp.SendAsync(message);
-        await smtp.DisconnectAsync(true);
+        using var smtp = new SmtpClient(host, port)
+        {
+            Credentials = new NetworkCredential(username, password),
+            EnableSsl = true,
+            Timeout = 30000
+        };
+        await smtp.SendMailAsync(mail);
     }
 
-    public async Task SendPasswordResetEmailAsync(string toEmail, string resetToken)
+    private MailMessage BaseMessage(string to, string subject, string htmlBody)
     {
-        var resetLink = $"http://localhost:5237/reset-password?token={resetToken}";
-
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress("SympNet Platform", _config["Email:From"]));
-        message.To.Add(new MailboxAddress(toEmail, toEmail));
-        message.Subject = "SympNet — Réinitialisation de votre mot de passe";
-        message.Body = new TextPart("html")
+        var from = _config["Email:From"] ?? throw new Exception("Email:From not configured");
+        var mail = new MailMessage
         {
-            Text = $@"
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset='UTF-8'/>
-</head>
-<body style='margin:0;padding:0;background-color:#f0f4f8;font-family:Arial,sans-serif;'>
-  <table width='100%' cellpadding='0' cellspacing='0'>
-    <tr>
-      <td align='center' style='padding:40px 0;'>
-        <table width='500' cellpadding='0' cellspacing='0' style='background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);'>
-
-          <!-- Header -->
-          <tr>
-            <td align='center' style='background:linear-gradient(135deg,#1a6b5e,#2d9e8a);padding:40px 30px;'>
-              <div style='font-size:36px;margin-bottom:8px;'>🌿</div>
-              <h1 style='color:#ffffff;margin:0;font-size:26px;font-weight:bold;letter-spacing:1px;'>SympNet</h1>
-              <p style='color:rgba(255,255,255,0.8);margin:6px 0 0;font-size:13px;'>Système Intelligent de Support Décisionnel Clinique</p>
-            </td>
-          </tr>
-
-          <!-- Body -->
-          <tr>
-            <td style='padding:40px 40px 30px;'>
-              <h2 style='color:#1a1a2e;font-size:22px;margin:0 0 16px;'>Réinitialisation de mot de passe</h2>
-              <p style='color:#444;font-size:15px;line-height:1.6;margin:0 0 12px;'>
-                Bonjour <strong>Administrateur</strong>,
-              </p>
-              <p style='color:#444;font-size:15px;line-height:1.6;margin:0 0 28px;'>
-                Nous avons reçu une demande de réinitialisation du mot de passe associé à votre compte SympNet.
-              </p>
-
-              <!-- Button -->
-              <table width='100%' cellpadding='0' cellspacing='0'>
-                <tr>
-                  <td align='center' style='padding-bottom:30px;'>
-                    <a href='{resetLink}' style='background:linear-gradient(135deg,#1a6b5e,#2d9e8a);color:#ffffff;text-decoration:none;padding:16px 40px;border-radius:8px;font-size:16px;font-weight:bold;display:inline-block;'>
-                      🔑 Réinitialiser mon mot de passe
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Info Box -->
-              <table width='100%' cellpadding='0' cellspacing='0'>
-                <tr>
-                  <td style='background:#fffbeb;border-left:4px solid #f59e0b;border-radius:6px;padding:16px 20px;'>
-                    <p style='color:#92400e;font-weight:bold;margin:0 0 8px;font-size:14px;'>⚠️ Informations importantes</p>
-                    <ul style='color:#78350f;font-size:13px;margin:0;padding-left:18px;line-height:2;'>
-                      <li>Ce lien est valable <strong>15 minutes</strong> uniquement</li>
-                      <li>Il ne peut être utilisé <strong>qu'une seule fois</strong></li>
-                      <li>Si vous n'avez pas fait cette demande, ignorez cet email</li>
-                    </ul>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Fallback link -->
-              <p style='color:#888;font-size:12px;margin:24px 0 0;line-height:1.6;'>
-                Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/>
-                <a href='{resetLink}' style='color:#2d9e8a;word-break:break-all;'>{resetLink}</a>
-              </p>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td align='center' style='background:#f8fafc;padding:20px;border-top:1px solid #e2e8f0;'>
-              <p style='color:#94a3b8;font-size:12px;margin:0;'>
-                © 2026 SympNet · TEK-UP University<br/>
-                Cet email a été envoyé automatiquement, merci de ne pas y répondre.
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"
+            From = new MailAddress(from, "SympNet"),
+            Subject = subject,
+            IsBodyHtml = true,
+            Body = WrapInLayout(htmlBody)
         };
+        mail.To.Add(to);
+        return mail;
+    }
 
-        using var smtp = new SmtpClient();
-        await smtp.ConnectAsync(_config["Email:SmtpHost"],
-            int.Parse(_config["Email:SmtpPort"]!), SecureSocketOptions.StartTls);
-        await smtp.AuthenticateAsync(_config["Email:Username"], _config["Email:Password"]);
-        await smtp.SendAsync(message);
-        await smtp.DisconnectAsync(true);
+    // Password reset email
+    public async Task SendPasswordResetEmailAsync(string toEmail, string rawToken)
+    {
+        var frontendBase = _config["App:FrontendUrl"] ?? "http://localhost:7049";
+        var resetLink = $"{frontendBase}/reset-password?token={Uri.EscapeDataString(rawToken)}&email={Uri.EscapeDataString(toEmail)}";
+
+        var body = "<h2 style='color:#0B2D2C;font-size:20px;margin:0 0 12px'>" +
+                   "Réinitialisation du mot de passe</h2>" +
+                   "<p style='color:#5E8584;font-size:14px;line-height:1.7;margin:0 0 24px'>" +
+                   "Vous avez demandé la réinitialisation de votre mot de passe.<br/>" +
+                   "Cliquez sur le bouton ci-dessous. Ce lien est valable <strong>15 minutes</strong>.</p>" +
+                   "<div style='text-align:center;margin:28px 0'>" +
+                   "<a href='" + resetLink + "' " +
+                   "style='background:linear-gradient(135deg,#0D6E6A,#3ABFB8);color:#fff;" +
+                   "padding:14px 36px;border-radius:10px;text-decoration:none;" +
+                   "font-weight:700;font-size:15px;display:inline-block'>" +
+                   "Réinitialiser mon mot de passe</a></div>" +
+                   "<p style='color:#9DBDBC;font-size:12px;line-height:1.6;margin:0'>" +
+                   "Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.<br/>" +
+                   "Lien direct : <a href='" + resetLink + "' style='color:#1A9E97'>" + resetLink + "</a></p>";
+
+        var mail = BaseMessage(toEmail, "Réinitialisation de votre mot de passe SympNet", body);
+        await SendAsync(mail);
+    }
+
+    // Doctor credentials email
+    public async Task SendDoctorCredentialsAsync(string toEmail, string firstName, string tempPassword)
+    {
+        var loginUrl = _config["App:FrontendUrl"] ?? "http://localhost:7049";
+
+        var body = "<h2 style='color:#0B2D2C;font-size:20px;margin:0 0 12px'>" +
+                   "Bienvenue, Dr. " + firstName + " !</h2>" +
+                   "<p style='color:#5E8584;font-size:14px;line-height:1.7;margin:0 0 16px'>" +
+                   "Votre compte médecin SympNet a été créé par l'administrateur.<br/>" +
+                   "Voici vos identifiants de connexion temporaires :</p>" +
+                   "<table style='background:#F0FBFA;border-radius:10px;padding:16px 24px;" +
+                   "border:1px solid #DFF0EF;margin-bottom:24px;width:100%'>" +
+                   "<tr><td style='color:#5E8584;font-size:13px;padding:4px 0'>Email</td>" +
+                   "<td style='color:#0B2D2C;font-weight:700;font-size:13px'>" + toEmail + "</td></tr>" +
+                   "<tr><td style='color:#5E8584;font-size:13px;padding:4px 0'>Mot de passe temporaire</td>" +
+                   "<td style='color:#0B2D2C;font-weight:700;font-size:13px;" +
+                   "letter-spacing:2px;font-family:monospace'>" + tempPassword + "</td></tr>" +
+                   "</table>" +
+                   "<p style='color:#e05a00;font-size:13px;font-weight:600;margin:0 0 20px'>" +
+                   "⚠️ Veuillez changer votre mot de passe dès votre première connexion.</p>" +
+                   "<div style='text-align:center;margin:20px 0'>" +
+                   "<a href='" + loginUrl + "/login' " +
+                   "style='background:linear-gradient(135deg,#0D6E6A,#3ABFB8);color:#fff;" +
+                   "padding:14px 36px;border-radius:10px;text-decoration:none;" +
+                   "font-weight:700;font-size:15px;display:inline-block'>" +
+                   "Se connecter</a></div>";
+
+        var mail = BaseMessage(toEmail, "Vos identifiants SympNet — Compte Médecin", body);
+        await SendAsync(mail);
+    }
+
+    // Shared HTML layout wrapper
+    private static string WrapInLayout(string innerHtml)
+    {
+        return "<div style='font-family:\"Instrument Sans\",Arial,sans-serif;max-width:520px;" +
+               "margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;" +
+               "border:1px solid #DFF0EF'>" +
+               "<div style='background:linear-gradient(135deg,#084E4B,#1A9E97);" +
+               "padding:36px 40px;text-align:center'>" +
+               "<h1 style='color:#fff;font-size:26px;margin:0;letter-spacing:-0.5px'>SympNet</h1>" +
+               "<p style='color:rgba(255,255,255,0.6);font-size:12px;margin:4px 0 0'>" +
+               "Système Intelligent de Support Décisionnel Clinique</p></div>" +
+               "<div style='padding:36px 40px'>" + innerHtml + "</div>" +
+               "<div style='background:#F0FBFA;padding:18px 40px;text-align:center;" +
+               "border-top:1px solid #DFF0EF'>" +
+               "<p style='color:#9DBDBC;font-size:12px;margin:0'>" +
+               "© 2026 SympNet — Tous droits réservés</p></div></div>";
     }
 }

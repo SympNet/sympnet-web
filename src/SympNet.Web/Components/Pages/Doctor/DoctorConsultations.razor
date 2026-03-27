@@ -1,0 +1,350 @@
+@page "/doctor/consultations"
+@layout Shared.DoctorLayout
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+@inject HttpClient Http
+@using System.Text.Json     
+
+<PageTitle>SympNet — Consultations IA</PageTitle>
+
+<style>
+    :root {
+        --primary: #0D9488;
+        --success: #10B981;
+        --warning: #F59E0B;
+        --danger: #EF4444;
+        --gray: #6B7280;
+        --white: #FFFFFF;
+        --light: #F9FAFB;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --radius-lg: 16px;
+        --radius-xl: 24px;
+    }
+
+    .consultations-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .welcome-banner {
+        background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+        border-radius: var(--radius-xl);
+        padding: 32px 40px;
+        margin-bottom: 32px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .stat-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        border: 1px solid rgba(13, 148, 136, 0.1);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 12px;
+    }
+
+    .stat-icon.teal { background: rgba(13, 148, 136, 0.1); color: #0D9488; }
+    .stat-icon.orange { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+    .stat-icon.green { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: var(--gray);
+    }
+
+    .tabs {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        border-bottom: 2px solid rgba(13, 148, 136, 0.1);
+        padding-bottom: 12px;
+    }
+
+    .tab {
+        padding: 8px 20px;
+        background: none;
+        border: none;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--gray);
+        cursor: pointer;
+        border-radius: 12px;
+        transition: all 0.2s;
+    }
+
+    .tab.active {
+        background: linear-gradient(135deg, #0D9488, #14B8A6);
+        color: white;
+    }
+
+    .consultation-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        margin-bottom: 16px;
+        border: 1px solid rgba(13, 148, 136, 0.1);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .consultation-card:hover {
+        transform: translateX(4px);
+        border-color: #0D9488;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+
+    .patient-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .patient-avatar {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #0D9488, #14B8A6);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: white;
+    }
+
+    .urgency-badge {
+        padding: 4px 12px;
+        border-radius: 100px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .urgency-badge.red { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
+    .urgency-badge.orange { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+    .urgency-badge.green { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 100px;
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(245, 158, 11, 0.1);
+        color: #F59E0B;
+    }
+
+    .status-badge.analyzed {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+
+    .card-content {
+        background: var(--light);
+        border-radius: 12px;
+        padding: 16px;
+        margin: 16px 0;
+    }
+
+    .ai-analysis {
+        background: linear-gradient(135deg, #0D9488, #14B8A6);
+        border-radius: 16px;
+        padding: 20px;
+        margin-top: 16px;
+        color: white;
+    }
+
+    .hypothesis-item {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+
+    .analyze-btn {
+        background: linear-gradient(135deg, #0D9488, #14B8A6);
+        border: none;
+        padding: 10px 20px;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 16px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+    }
+
+    @@media (max-width: 1024px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<div class="consultations-container">
+    <div class="welcome-banner">
+        <h1>🧠 Consultations IA</h1>
+        <p>Diagnostics assistés par intelligence artificielle</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon teal"><i class="fas fa-file-alt"></i></div><div class="stat-value">@consultations.Count</div><div class="stat-label">Total consultations</div></div>
+        <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-clock"></i></div><div class="stat-value">@consultations.Count(c => c.Status == "Pending")</div><div class="stat-label">En attente</div></div>
+        <div class="stat-card"><div class="stat-icon green"><i class="fas fa-chart-line"></i></div><div class="stat-value">@consultations.Count(c => c.AIUrgencyLevel != null)</div><div class="stat-label">Analysées</div></div>
+        <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-exclamation-triangle"></i></div><div class="stat-value">@consultations.Count(c => c.AIUrgencyLevel == "Red" || c.AIUrgencyLevel == "Orange")</div><div class="stat-label">Cas urgents</div></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab @(activeTab == "all" ? "active" : "")" @onclick='() => SetTab("all")'>Toutes</button>
+        <button class="tab @(activeTab == "pending" ? "active" : "")" @onclick='() => SetTab("pending")'>En attente</button>
+        <button class="tab @(activeTab == "urgent" ? "active" : "")" @onclick='() => SetTab("urgent")'>Urgent</button>
+        <button class="tab @(activeTab == "analyzed" ? "active" : "")" @onclick='() => SetTab("analyzed")'>Analysées</button>
+    </div>
+
+    @if (!filteredConsultations.Any())
+    {
+        <div class="empty-state"><i class="fas fa-folder-open" style="font-size: 48px; margin-bottom: 16px;"></i><h3>Aucune consultation</h3><p>Les consultations apparaîtront ici</p></div>
+    }
+    else
+    {
+        @foreach (var c in filteredConsultations.OrderByDescending(x => x.CreatedAt))
+        {
+            <div class="consultation-card" @onclick="() => SelectConsultation(c)">
+                <div class="card-header">
+                    <div class="patient-info">
+                        <div class="patient-avatar">@c.PatientName[0]</div>
+                        <div><strong>@c.PatientName</strong><br/><span style="font-size: 12px; color: var(--gray);">@c.PatientEmail</span></div>
+                    </div>
+                    <div>
+                        @if (c.AIUrgencyLevel != null)
+                        {
+                            <span class="urgency-badge @c.AIUrgencyLevel.ToLower()">@c.AIUrgencyLevel</span>
+                        }
+                        <span class="status-badge @(c.AIDiagnosisJson != null ? "analyzed" : "")">@(c.AIDiagnosisJson != null ? "Analysé" : "En attente")</span>
+                    </div>
+                </div>
+                <div class="card-content"><i class="fas fa-notes-medical"></i> <strong>Symptômes :</strong> @c.SymptomDescription</div>
+                
+                @if (selectedConsultation?.Id == c.Id && c.AIDiagnosisJson != null)
+                {
+                    <div class="ai-analysis">
+                        <div><strong>🤖 Analyse IA</strong> - Score: @(c.AIConfidenceScore?.ToString("P0"))</div>
+                        @try {
+                            var json = JsonDocument.Parse(c.AIDiagnosisJson);
+                            foreach (var hyp in json.RootElement.GetProperty("hypotheses").EnumerateArray())
+                            {
+                                <div class="hypothesis-item">
+                                    <strong>@hyp.GetProperty("diagnosis").GetString()</strong><br/>
+                                    Score: @hyp.GetProperty("score").GetDouble().ToString("P0")<br/>
+                                    <small>@hyp.GetProperty("explanation").GetString()</small>
+                                </div>
+                            }
+                        } catch { }
+                    </div>
+                }
+                else if (selectedConsultation?.Id == c.Id)
+                {
+                    <button class="analyze-btn" @onclick:stopPropagation="true" @onclick="() => AnalyzeWithAI(c)">Lancer l'analyse IA</button>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? Token { get; set; }
+    [SupplyParameterFromQuery] public string? Email { get; set; }
+
+    private string userEmail = "";
+    private string activeTab = "all";
+    private List<ConsultationDto> consultations = new();
+    private ConsultationDto? selectedConsultation = null;
+
+    private List<ConsultationDto> filteredConsultations => activeTab switch
+    {
+        "pending" => consultations.Where(c => c.AIDiagnosisJson == null).ToList(),
+        "urgent" => consultations.Where(c => c.AIUrgencyLevel == "Red" || c.AIUrgencyLevel == "Orange").ToList(),
+        "analyzed" => consultations.Where(c => c.AIDiagnosisJson != null).ToList(),
+        _ => consultations
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        userEmail = Email ?? "";
+        if (!string.IsNullOrEmpty(Token))
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+        await LoadConsultations();
+    }
+
+    private async Task LoadConsultations()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<List<ConsultationDto>>("api/consultations/doctor/1");
+            if (response != null && response.Any()) consultations = response;
+            else consultations = GetDemoConsultations();
+        }
+        catch { consultations = GetDemoConsultations(); }
+    }
+
+    private void SelectConsultation(ConsultationDto c) => selectedConsultation = selectedConsultation?.Id == c.Id ? null : c;
+    private void SetTab(string tab) { activeTab = tab; selectedConsultation = null; }
+
+    private async Task AnalyzeWithAI(ConsultationDto c)
+    {
+        await Task.Delay(1500);
+        var fake = new { hypotheses = new[] { new { diagnosis = "PNEUMONIE", score = 0.82, explanation = "Symptômes respiratoires typiques" } } };
+        c.AIDiagnosisJson = JsonSerializer.Serialize(fake);
+        c.AIConfidenceScore = 0.82;
+        c.AIUrgencyLevel = "Orange";
+        StateHasChanged();
+    }
+
+    private List<ConsultationDto> GetDemoConsultations() => new()
+    {
+        new() { Id = 1, PatientName = "Ahmed Ben Ali", PatientEmail = "ahmed@email.com", SymptomDescription = "Fièvre 39°C, toux, douleur thoracique", CreatedAt = DateTime.Now.AddHours(-2), Status = "Pending" },
+        new() { Id = 2, PatientName = "Sonia Trabelsi", PatientEmail = "sonia@email.com", SymptomDescription = "Maux de tête sévères, nausées", CreatedAt = DateTime.Now.AddHours(-5), Status = "InProgress", AIUrgencyLevel = "Orange", AIConfidenceScore = 0.72, AIDiagnosisJson = "{\"hypotheses\":[{\"diagnosis\":\"MIGRAINE\",\"score\":0.82,\"explanation\":\"Symptômes typiques\"}]}" }
+    };
+
+    public class ConsultationDto
+    {
+        public int Id { get; set; }
+        public string PatientName { get; set; } = "";
+        public string PatientEmail { get; set; } = "";
+        public string SymptomDescription { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+        public string Status { get; set; } = "";
+        public double? AIConfidenceScore { get; set; }
+        public string? AIUrgencyLevel { get; set; }
+        public string? AIDiagnosisJson { get; set; }
+    }
+}

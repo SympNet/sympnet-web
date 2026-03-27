@@ -1,4 +1,5 @@
 @page "/login"
+@layout EmptyLayout
 @rendermode InteractiveServer
 @inject NavigationManager Nav
 @inject HttpClient Http
@@ -274,12 +275,20 @@ a{text-decoration:none;color:inherit}
             var token = result.RootElement.GetProperty("token").GetString();
             var userEmail = result.RootElement.GetProperty("email").GetString();
 
-            Nav.NavigateTo($"/dashboard?token={Uri.EscapeDataString(token ?? "")}&role={returnedRole}&email={Uri.EscapeDataString(email ?? "")}");
+            // Redirection selon le rôle
+            if (returnedRole == "doctor")
+            {
+                Nav.NavigateTo($"/doctor/dashboard?token={Uri.EscapeDataString(token ?? "")}&email={Uri.EscapeDataString(email ?? "")}");
+            }
+            else
+            {
+                Nav.NavigateTo($"/dashboard?token={Uri.EscapeDataString(token ?? "")}&role={returnedRole}&email={Uri.EscapeDataString(email ?? "")}");
+            }
         }
-        catch (Exception ex)
-        {
-            errorMsg = "Erreur de connexion. Vérifiez que l'API est démarrée.";
-        }
+        catch
+{
+    errorMsg = "Erreur de connexion. Vérifiez que l'API est démarrée.";
+}
         finally
         {
             loading = false;

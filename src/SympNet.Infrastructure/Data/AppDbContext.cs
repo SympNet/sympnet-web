@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Patient> Patients { get; set; }
     public DbSet<Doctor> Doctors { get; set; }
+    public DbSet<Consultation> Consultations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,5 +41,17 @@ public class AppDbContext : DbContext
             IsActive = true,
             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
+
+        modelBuilder.Entity<Consultation>()
+    .HasOne(c => c.Patient)
+    .WithMany()
+    .HasForeignKey(c => c.PatientId)
+    .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Consultation>()
+            .HasOne(c => c.Doctor)
+            .WithMany()
+            .HasForeignKey(c => c.DoctorId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
