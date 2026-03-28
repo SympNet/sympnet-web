@@ -27,6 +27,13 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ConsultationService>();
+// Enregistrer AIAnalysisService
+// Enregistrer AIAnalysisService
+builder.Services.AddHttpClient<AIAnalysisService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["AIService:Url"] ?? "http://localhost:8000");
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
 
 // ─────────────────────────────────────────────────────────────
 //  JWT AUTHENTICATION

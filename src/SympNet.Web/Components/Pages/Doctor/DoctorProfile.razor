@@ -1,6 +1,5 @@
 @page "/doctor/profile"
 @layout Shared.DoctorLayout
-@rendermode InteractiveServer
 @inject NavigationManager Nav
 @inject HttpClient Http
 @using System.Text.Json
@@ -393,7 +392,7 @@
                     <div class="profile-info">
                         <h2>Dr. @doctorInfo.FirstName @doctorInfo.LastName</h2>
                         <p><i class="fas fa-envelope"></i> @userEmail</p>
-                        <div class="edit-badge" @onclick="() => isEditing = !isEditing">
+                        <div class="edit-badge" @onclick="ToggleEdit">
                             <i class="fas fa-@(isEditing ? "times" : "pen")"></i> @(isEditing ? "Annuler" : "Modifier le profil")
                         </div>
                     </div>
@@ -485,7 +484,7 @@
                     {
                         <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
                             <button class="btn-cancel" @onclick="CancelEdit">Annuler</button>
-                            <button class="btn-save" @onclick="SaveProfile">Enregistrer</button>
+                            <button class="btn-save" @onclick="SaveProfile" disabled="@isSaving">@(isSaving ? "Enregistrement..." : "Enregistrer")</button>
                         </div>
                     }
                 </div>
@@ -561,6 +560,7 @@
     private string userInitial = "";
     private bool isLoading = true;
     private bool isEditing = false;
+    private bool isSaving = false;
     private string profileImageBase64 = "";
     private string successMessage = "";
     private string errorMessage = "";
@@ -583,6 +583,18 @@
         await JS.InvokeVoidAsync("eval", "document.getElementById('avatarFileInput').click()");
     }
 
+    private void ToggleEdit()
+    {
+        if (isEditing)
+        {
+            CancelEdit();
+        }
+        else
+        {
+            isEditing = true;
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         userEmail = Email ?? "";
@@ -599,25 +611,14 @@
     }
 
     private async Task LoadProfileData()
+{
+    try
     {
-        try
+        // Appel API pour récupérer le profil
+        var profileResponse = await Http.GetFromJsonAsync<DoctorInfoDto>("api/doctor/profile");
+        if (profileResponse != null)
         {
-            await Task.Delay(500);
-            
-            string firstName = userEmail.Split('@')[0];
-            if (firstName.Contains('.')) firstName = firstName.Split('.')[0];
-            
-            doctorInfo = new DoctorInfoDto
-            {
-                FirstName = firstName.Length > 0 ? char.ToUpper(firstName[0]) + firstName.Substring(1) : "Médecin",
-                LastName = "User",
-                Email = userEmail,
-                Speciality = "Médecine Générale",
-                LicenseNumber = "MED-" + DateTime.Now.Year + "-" + new Random().Next(1000, 9999),
-                Address = "Centre Médical SympNet, Tunis, Tunisie",
-                PhoneNumber = "+216 99 999 999"
-            };
-            
+            doctorInfo = profileResponse;
             originalDoctorInfo = new DoctorInfoDto
             {
                 FirstName = doctorInfo.FirstName,
@@ -628,19 +629,30 @@
                 Address = doctorInfo.Address,
                 PhoneNumber = doctorInfo.PhoneNumber
             };
-
-            activities = new List<ActivityDto>
-            {
-                new() { Title = "Connexion à la plateforme", Date = DateTime.Now.AddHours(-2), Icon = "fa-sign-in-alt" },
-                new() { Title = "Consultation patient #1245", Date = DateTime.Now.AddHours(-3), Icon = "fa-stethoscope" },
-                new() { Title = "Analyse IA terminée", Date = DateTime.Now.AddHours(-5), Icon = "fa-microscope" }
-            };
+            userInitial = doctorInfo.FirstName.Length > 0 ? doctorInfo.FirstName[0].ToString().ToUpper() : "D";
         }
-        catch (Exception ex)
+        
+        // Récupérer les stats
+        var statsResponse = await Http.GetFromJsonAsync<DoctorStatsDto>("api/doctor/stats");
+        if (statsResponse != null)
         {
-            errorMessage = "Erreur: " + ex.Message;
+            totalPatients = statsResponse.TotalPatients;
+            totalConsultations = statsResponse.TotalConsultations;
+            averageRating = statsResponse.AverageRating;
         }
+
+        activities = new List<ActivityDto>
+        {
+            new() { Title = "Connexion à la plateforme", Date = DateTime.Now.AddHours(-2), Icon = "fa-sign-in-alt" },
+            new() { Title = "Consultation patient #1245", Date = DateTime.Now.AddHours(-3), Icon = "fa-stethoscope" },
+            new() { Title = "Analyse IA terminée", Date = DateTime.Now.AddHours(-5), Icon = "fa-microscope" }
+        };
     }
+    catch (Exception ex)
+    {
+        errorMessage = "Erreur: " + ex.Message;
+    }
+}
 
     private async Task HandleImageUpload(InputFileChangeEventArgs e)
     {
@@ -651,7 +663,7 @@
             {
                 var buffer = new byte[file.Size];
                 await using var stream = file.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
-                await stream.ReadAsync(buffer);
+                var bytesRead = await stream.ReadAsync(buffer);
                 
                 var base64 = Convert.ToBase64String(buffer);
                 var extension = Path.GetExtension(file.Name).ToLower();
@@ -659,13 +671,16 @@
                 {
                     ".png" => "image/png",
                     ".jpg" or ".jpeg" => "image/jpeg",
+                    ".gif" => "image/gif",
                     _ => "image/jpeg"
                 };
                 
                 profileImageBase64 = $"data:{mimeType};base64,{base64}";
                 successMessage = "Photo mise à jour !";
+                
                 await Task.Delay(2000);
                 successMessage = "";
+                StateHasChanged();
             }
             else
             {
@@ -683,10 +698,14 @@
     }
 
     private async Task SaveProfile()
+{
+    isSaving = true;
+    StateHasChanged();
+    try
     {
-        try
+        var response = await Http.PutAsJsonAsync("api/doctor/profile", doctorInfo);
+        if (response.IsSuccessStatusCode)
         {
-            await Task.Delay(500);
             originalDoctorInfo = new DoctorInfoDto
             {
                 FirstName = doctorInfo.FirstName,
@@ -700,16 +719,27 @@
             userInitial = doctorInfo.FirstName.Length > 0 ? doctorInfo.FirstName[0].ToString().ToUpper() : "D";
             isEditing = false;
             successMessage = "Profil mis à jour !";
-            await Task.Delay(2000);
-            successMessage = "";
         }
-        catch (Exception ex)
+        else
         {
-            errorMessage = "Erreur: " + ex.Message;
-            await Task.Delay(2000);
-            errorMessage = "";
+            errorMessage = "Erreur lors de la mise à jour";
         }
+        await Task.Delay(2000);
+        successMessage = "";
+        errorMessage = "";
     }
+    catch (Exception ex)
+    {
+        errorMessage = "Erreur: " + ex.Message;
+        await Task.Delay(2000);
+        errorMessage = "";
+    }
+    finally
+    {
+        isSaving = false;
+        StateHasChanged();
+    }
+}
 
     private void CancelEdit()
     {
@@ -724,47 +754,80 @@
             PhoneNumber = originalDoctorInfo.PhoneNumber
         };
         isEditing = false;
+        StateHasChanged();
     }
 
     private async Task ChangePassword()
+{
+    if (string.IsNullOrWhiteSpace(currentPassword))
     {
-        if (string.IsNullOrWhiteSpace(currentPassword))
-        {
-            errorMessage = "Mot de passe actuel requis";
-            return;
-        }
-        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
-        {
-            errorMessage = "Nouveau mot de passe (min 6 caractères)";
-            return;
-        }
-        if (newPassword != confirmPassword)
-        {
-            errorMessage = "Les mots de passe ne correspondent pas";
-            return;
-        }
+        errorMessage = "Mot de passe actuel requis";
+        await ClearError();
+        return;
+    }
+    if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+    {
+        errorMessage = "Nouveau mot de passe (min 6 caractères)";
+        await ClearError();
+        return;
+    }
+    if (newPassword != confirmPassword)
+    {
+        errorMessage = "Les mots de passe ne correspondent pas";
+        await ClearError();
+        return;
+    }
+    
+    passwordLoading = true;
+    StateHasChanged();
+    try
+    {
+        var response = await Http.PutAsJsonAsync("api/doctor/change-password", new 
+        { 
+            CurrentPassword = currentPassword,
+            NewPassword = newPassword
+        });
         
-        passwordLoading = true;
-        try
+        if (response.IsSuccessStatusCode)
         {
-            await Task.Delay(1000);
             successMessage = "Mot de passe changé !";
             currentPassword = "";
             newPassword = "";
             confirmPassword = "";
-            await Task.Delay(2000);
-            successMessage = "";
         }
-        catch (Exception ex)
+        else
         {
-            errorMessage = "Erreur: " + ex.Message;
-            await Task.Delay(2000);
-            errorMessage = "";
+            var error = await response.Content.ReadFromJsonAsync<ApiError>();
+            errorMessage = error?.message ?? "Erreur lors du changement";
         }
-        finally
-        {
-            passwordLoading = false;
-        }
+        await Task.Delay(2000);
+        successMessage = "";
+        errorMessage = "";
+    }
+    catch (Exception ex)
+    {
+        errorMessage = "Erreur: " + ex.Message;
+        await Task.Delay(2000);
+        errorMessage = "";
+    }
+    finally
+    {
+        passwordLoading = false;
+        StateHasChanged();
+    }
+}
+
+// Ajouter cette classe pour les erreurs
+public class ApiError
+{
+    public string message { get; set; } = "";
+}
+
+    private async Task ClearError()
+    {
+        await Task.Delay(3000);
+        errorMessage = "";
+        StateHasChanged();
     }
 
     public class DoctorInfoDto
@@ -777,7 +840,12 @@
         public string Address { get; set; } = "";
         public string PhoneNumber { get; set; } = "";
     }
-
+    public class DoctorStatsDto
+{
+    public int TotalPatients { get; set; }
+    public int TotalConsultations { get; set; }
+    public double AverageRating { get; set; }
+}
     public class ActivityDto
     {
         public string Title { get; set; } = "";
