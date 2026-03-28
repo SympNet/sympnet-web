@@ -26,5 +26,5 @@ public class UpdateAIResultDto
 {
     public string AIDiagnosisJson { get; set; } = "";
     public double AIConfidenceScore { get; set; }
-    public string AIUrgencyLevel { get; set; } = "Green";
+    public string AIUrgencyLevel { get; set; } = "GREEN";
 }

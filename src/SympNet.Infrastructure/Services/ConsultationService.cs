@@ -16,56 +16,73 @@ public class ConsultationService
 
     public async Task<List<ConsultationDto>> GetDoctorConsultationsAsync(int doctorId)
     {
-        return await _db.Consultations
+        var consultations = await _db.Consultations
             .Where(c => c.DoctorId == doctorId)
             .Include(c => c.Patient)
+            .ThenInclude(p => ((Patient)p.Patient))
+            .Include(c => c.Doctor)
+            .ThenInclude(d => ((Doctor)d.Doctor))
             .OrderByDescending(c => c.CreatedAt)
-            .Select(c => new ConsultationDto
-            {
-                Id = c.Id,
-                PatientId = c.PatientId,
-                // Utilisez les propriétés qui existent dans User
-                PatientName = c.Patient.Email,  // Temporaire: utilise Email comme nom
-                PatientEmail = c.Patient.Email,
-                CreatedAt = c.CreatedAt,
-                SymptomDescription = c.SymptomDescription,
-                BodyPart = c.BodyPart,
-                Status = c.Status,
-                AIConfidenceScore = c.AIConfidenceScore,
-                AIUrgencyLevel = c.AIUrgencyLevel,
-                AIDiagnosisJson = c.AIDiagnosisJson
-            })
             .ToListAsync();
+
+        return consultations.Select(c => new ConsultationDto
+        {
+            Id = c.Id,
+            PatientId = c.PatientId,
+            PatientName = GetPatientFullName(c.Patient),
+            PatientEmail = c.Patient.Email,
+            CreatedAt = c.CreatedAt,
+            SymptomDescription = c.SymptomDescription,
+            BodyPart = c.BodyPart,
+            Status = c.Status,
+            AIConfidenceScore = c.AIConfidenceScore,
+            AIUrgencyLevel = c.AIUrgencyLevel,
+            AIDiagnosisJson = c.AIDiagnosisJson
+        }).ToList();
     }
 
     public async Task<ConsultationDto?> GetConsultationByIdAsync(int id)
     {
-        return await _db.Consultations
+        var consultation = await _db.Consultations
             .Include(c => c.Patient)
-            .Where(c => c.Id == id)
-            .Select(c => new ConsultationDto
-            {
-                Id = c.Id,
-                PatientId = c.PatientId,
-                PatientName = c.Patient.Email,  // Temporaire
-                PatientEmail = c.Patient.Email,
-                CreatedAt = c.CreatedAt,
-                SymptomDescription = c.SymptomDescription,
-                BodyPart = c.BodyPart,
-                Status = c.Status,
-                AIConfidenceScore = c.AIConfidenceScore,
-                AIUrgencyLevel = c.AIUrgencyLevel,
-                AIDiagnosisJson = c.AIDiagnosisJson
-            })
-            .FirstOrDefaultAsync();
+            .ThenInclude(p => ((Patient)p.Patient))
+            .Include(c => c.Doctor)
+            .ThenInclude(d => ((Doctor)d.Doctor))
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (consultation == null) return null;
+
+        return new ConsultationDto
+        {
+            Id = consultation.Id,
+            PatientId = consultation.PatientId,
+            PatientName = GetPatientFullName(consultation.Patient),
+            PatientEmail = consultation.Patient.Email,
+            CreatedAt = consultation.CreatedAt,
+            SymptomDescription = consultation.SymptomDescription,
+            BodyPart = consultation.BodyPart,
+            Status = consultation.Status,
+            AIConfidenceScore = consultation.AIConfidenceScore,
+            AIUrgencyLevel = consultation.AIUrgencyLevel,
+            AIDiagnosisJson = consultation.AIDiagnosisJson
+        };
+    }
+
+    private string GetPatientFullName(User user)
+    {
+        if (user.Patient != null)
+        {
+            return $"{user.Patient.FirstName} {user.Patient.LastName}";
+        }
+        return user.Email;
     }
 
     public async Task<ConsultationDto> CreateConsultationAsync(int patientId, CreateConsultationDto dto)
     {
-        // Trouver un médecin (sans filtrer sur IsValidated si ça n'existe pas)
-        var doctor = await _db.Users
-            .Where(u => u.Role == "Doctor")
-            .FirstOrDefaultAsync();
+        // Trouver un médecin disponible
+        var doctor = await _db.Doctors
+            .Include(d => d.User)
+            .FirstOrDefaultAsync(d => d.User.IsActive && d.IsValidated);
 
         if (doctor == null) throw new Exception("Aucun médecin disponible.");
 
@@ -86,13 +103,13 @@ public class ConsultationService
 
     public async Task UpdateAIResultAsync(int consultationId, UpdateAIResultDto dto)
     {
-        var c = await _db.Consultations.FindAsync(consultationId);
-        if (c == null) return;
+        var consultation = await _db.Consultations.FindAsync(consultationId);
+        if (consultation == null) return;
 
-        c.AIDiagnosisJson = dto.AIDiagnosisJson;
-        c.AIConfidenceScore = dto.AIConfidenceScore;
-        c.AIUrgencyLevel = dto.AIUrgencyLevel;
-        c.Status = "InProgress";
+        consultation.AIDiagnosisJson = dto.AIDiagnosisJson;
+        consultation.AIConfidenceScore = dto.AIConfidenceScore;
+        consultation.AIUrgencyLevel = dto.AIUrgencyLevel;
+        consultation.Status = "Analyzed";
         await _db.SaveChangesAsync();
     }
 }

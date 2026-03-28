@@ -1,0 +1,148 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+@inject HttpClient Http
+
+<PageTitle>SympNet — Admin</PageTitle>
+
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
+
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Instrument Sans', sans-serif; background: #F9FAFB; min-height: 100vh; color: #1F2937; }
+    .admin-app { display: flex; min-height: 100vh; }
+    .admin-sidebar {
+        position: fixed; left: 0; top: 0; width: 280px; height: 100vh;
+        background: #FFFFFF; border-right: 1px solid rgba(13, 148, 136, 0.1);
+        display: flex; flex-direction: column; z-index: 100; transition: all 0.3s ease;
+    }
+    .admin-sidebar-header { padding: 28px 24px; border-bottom: 1px solid rgba(13, 148, 136, 0.1); }
+    .admin-logo { display: flex; align-items: center; gap: 12px; }
+    .admin-logo-icon {
+        width: 40px; height: 40px; background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+        border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        font-size: 20px; color: white; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+    }
+    .admin-logo-text h2 {
+        font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; font-weight: 700;
+        background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        margin: 0;
+    }
+    .admin-logo-text p { font-size: 11px; color: #6B7280; margin-top: 2px; }
+    .admin-sidebar-nav { flex: 1; padding: 24px 16px; overflow-y: auto; }
+    .admin-sidebar-nav::-webkit-scrollbar { width: 4px; }
+    .admin-sidebar-nav::-webkit-scrollbar-track { background: rgba(13, 148, 136, 0.05); border-radius: 4px; }
+    .admin-sidebar-nav::-webkit-scrollbar-thumb { background: rgba(13, 148, 136, 0.3); border-radius: 4px; }
+    .admin-nav-section { margin-bottom: 24px; }
+    .admin-nav-label {
+        font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+        color: #9CA3AF; padding: 0 12px; margin-bottom: 12px;
+    }
+    .admin-nav-item {
+        display: flex; align-items: center; gap: 12px; padding: 10px 16px; margin: 4px 0;
+        border-radius: 12px; color: #6B7280; text-decoration: none; transition: all 0.2s ease;
+        font-size: 14px; font-weight: 500; cursor: pointer;
+    }
+    .admin-nav-item i { width: 20px; font-size: 16px; }
+    .admin-nav-item:hover { background: rgba(13, 148, 136, 0.05); color: #0D9488; }
+    .admin-nav-item.active {
+        background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+        color: white; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+    }
+    .admin-nav-item.active i { color: white; }
+    .admin-sidebar-footer { padding: 20px 16px; border-top: 1px solid rgba(13, 148, 136, 0.1); }
+    .admin-user-info {
+        display: flex; align-items: center; gap: 12px; padding: 12px;
+        border-radius: 12px; background: rgba(13, 148, 136, 0.05); margin-bottom: 12px;
+    }
+    .admin-user-avatar {
+        width: 44px; height: 44px; background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+        border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 16px; color: white;
+    }
+    .admin-user-details h4 { font-size: 14px; font-weight: 600; margin: 0 0 2px 0; color: #1F2937; }
+    .admin-user-details p { font-size: 11px; color: #6B7280; margin: 0; }
+    .admin-logout-btn {
+        width: 100%; padding: 10px; background: none; border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 12px; color: #EF4444; font-size: 13px; font-weight: 500;
+        cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center;
+        justify-content: center; gap: 8px;
+    }
+    .admin-logout-btn:hover { background: rgba(239, 68, 68, 0.1); border-color: #EF4444; }
+    .admin-main-content { margin-left: 280px; min-height: 100vh; background: #F9FAFB; padding: 24px 32px; width: calc(100% - 280px); }
+    @@media (max-width: 768px) {
+        .admin-sidebar { transform: translateX(-100%); }
+        .admin-main-content { margin-left: 0; width: 100%; }
+    }
+</style>
+
+<div class="admin-app">
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-header">
+            <div class="admin-logo">
+                <div class="admin-logo-icon"><i class="fas fa-brain"></i></div>
+                <div class="admin-logo-text"><h2>SympNet</h2><p>Admin Panel</p></div>
+            </div>
+        </div>
+        <div class="admin-sidebar-nav">
+            <div class="admin-nav-section">
+                <div class="admin-nav-label">Vue Générale</div>
+                <a href="/dashboard-admin?token=@Token&role=admin&email=@Email" class="admin-nav-item @(IsActive("/dashboard-admin") ? "active" : "")">
+                    <i class="fas fa-chart-line"></i><span>Tableau de bord</span>
+                </a>
+            </div>
+            <div class="admin-nav-section">
+                <div class="admin-nav-label">Gestion</div>
+                <a href="/admin/doctors?token=@Token&role=admin&email=@Email" class="admin-nav-item @(IsActive("/admin/doctors") ? "active" : "")">
+                    <i class="fas fa-user-md"></i><span>Médecins</span>
+                </a>
+                <a href="/admin/patients?token=@Token&role=admin&email=@Email" class="admin-nav-item @(IsActive("/admin/patients") ? "active" : "")">
+                    <i class="fas fa-users"></i><span>Patients</span>
+                </a>
+            </div>
+            <div class="admin-nav-section">
+                <div class="admin-nav-label">Compte</div>
+                <a href="/profile?token=@Token&role=admin&email=@Email" class="admin-nav-item @(IsActive("/profile") ? "active" : "")">
+                    <i class="fas fa-user-circle"></i><span>Mon Profil</span>
+                </a>
+            </div>
+        </div>
+        <div class="admin-sidebar-footer">
+            <div class="admin-user-info">
+                <div class="admin-user-avatar">@(userEmail.Length > 0 ? userEmail[0].ToString().ToUpper() : "A")</div>
+                <div class="admin-user-details"><h4>@userName</h4><p>Administrateur</p></div>
+            </div>
+            <button class="admin-logout-btn" @onclick="Logout">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Déconnexion</span>
+</button>
+        </div>
+    </aside>
+    <div class="admin-main-content">@Body</div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? Token { get; set; }
+    [SupplyParameterFromQuery] public string? Email { get; set; }
+    private string userEmail = "";
+    private string userName = "";
+
+    protected override void OnParametersSet()
+    {
+        userEmail = Email ?? "";
+        userName = userEmail.Split('@')[0];
+        if (!string.IsNullOrEmpty(Token))
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+    }
+    
+    private bool IsActive(string path) => Nav.Uri.Contains(path, StringComparison.OrdinalIgnoreCase);
+    
+    private void Logout()
+    {
+        // Supprimer le token des headers
+        Http.DefaultRequestHeaders.Authorization = null;
+        // Rediriger vers la page de login
+        Nav.NavigateTo("/login", true);
+    }
+}

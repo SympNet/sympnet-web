@@ -194,7 +194,8 @@
         margin-left: 280px;
         min-height: 100vh;
         background: #F9FAFB;
-        padding: 20px;
+        padding: 24px 32px;
+        width: calc(100% - 280px);
     }
 
     @@media (max-width: 768px) {
@@ -203,6 +204,7 @@
         }
         .doctor-main-content {
             margin-left: 0;
+            width: 100%;
         }
     }
 </style>
@@ -276,11 +278,9 @@
 
     protected override void OnParametersSet()
     {
-        // Récupérer les paramètres depuis l'URL
         userEmail = Email ?? "";
         userName = userEmail.Split('@')[0];
         
-        // Ajouter le token aux headers HTTP
         if (!string.IsNullOrEmpty(Token))
         {
             Http.DefaultRequestHeaders.Authorization = 
@@ -295,6 +295,7 @@
 
     private void Logout()
     {
-        Nav.NavigateTo("/login");
+        Http.DefaultRequestHeaders.Authorization = null;
+        Nav.NavigateTo("/login", true);
     }
 }
